@@ -1,39 +1,53 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+## token_manager_dio
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages). 
+[![Pub Version](https://img.shields.io/pub/v/token_manager_dio.svg)](https://pub.dev/packages/token_manager_dio)
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages). 
--->
+`token_manager_dio` provides a Dio interceptor that:
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+- injects auth tokens into outgoing requests;
+- waits for active refresh before requests;
+- retries failed calls after token refresh.
 
-## Features
+## Installation
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+```yaml
+dependencies:
+  token_manager: ^0.1.0
+  token_manager_dio: ^0.1.0
+```
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
-
 ```dart
-const like = 'sample';
+import 'package:dio/dio.dart';
+import 'package:token_manager/token_manager.dart';
+import 'package:token_manager_dio/token_manager_dio.dart';
+
+final class AppTokens {
+  const AppTokens(this.accessToken);
+  final String accessToken;
+}
+
+final class DioAuthDelegate extends RefreshInterceptorDelegate<AppTokens> {
+  @override
+  void applyTokensToRequest(RequestOptions options, AppTokens? tokens) {
+    if (tokens != null) {
+      options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
+    }
+  }
+}
+
+Future<void> configureClient(
+  Dio dio,
+  TokenManager<AppTokens> manager,
+) async {
+  dio.interceptors.add(
+    RefreshInterceptor<AppTokens>(
+      manager: manager,
+      delegate: DioAuthDelegate(),
+    ),
+  );
+}
 ```
 
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+For a complete runnable example, see `example/main.dart`.

@@ -1,94 +1,83 @@
-# Tokens Manager
+## token_manager
 
-This module provides functionality for managing authentication tokens. It handles token storage, refresh, and expiration management.
+[![Pub Version](https://img.shields.io/pub/v/token_manager.svg)](https://pub.dev/packages/token_manager)
 
-## Key Features
+`token_manager` is a lightweight core library for token storage, proactive refresh,
+and synchronized token state access across your app.
 
-- Token storage and retrieval
-- Automatic token refresh before expiration
-- Token revocation handling
-- Token update stream
-- Secure token storage
+## Features
+
+- Storage abstraction via `TokenStorage<T>`.
+- Auto-refresh scheduling via `TokenManagerRefreshDelegate<T>`.
+- Refresh synchronization (`waitForFresh`) to avoid concurrent refresh storms.
+- Reactive token updates via `tokensStream`.
+- Built-in revoke flow via `RevokedTokensException`.
+
+## Installation
+
+```yaml
+dependencies:
+  token_manager: ^0.1.0
+```
 
 ## Usage
 
-### Creating a Token Manager
-
 ```dart
-class MyTokensManager extends TokensManager<MyTokens> {
-  MyTokensManager({required super.storage});
+import 'package:token_manager/token_manager.dart';
+
+final class AppTokens {
+  const AppTokens({
+    required this.accessToken,
+    required this.expiresAt,
+  });
+
+  final String accessToken;
+  final DateTime expiresAt;
+}
+
+final class MemoryTokenStorage implements TokenStorage<AppTokens> {
+  AppTokens? _tokens;
 
   @override
-  Future<MyTokens> refresh(MyTokens tokens) async {
-    // Implement token refresh logic
-    final response = await api.refreshTokens(tokens.refreshToken);
-    return MyTokens.fromJson(response.data);
-  }
+  AppTokens? getTokens() => _tokens;
 
   @override
-  DateTime? expiresAt(MyTokens tokens) {
-    return tokens.expiresAt;
+  Future<void> setTokens(AppTokens? tokens) async {
+    _tokens = tokens;
   }
+}
+
+final class AppRefreshDelegate extends TokenManagerRefreshDelegate<AppTokens> {
+  @override
+  Future<AppTokens> refresh(AppTokens tokens) async {
+    // Replace with real refresh call.
+    return AppTokens(
+      accessToken: '${tokens.accessToken}_refreshed',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+    );
+  }
+}
+
+final class AppTokenInfoDelegate implements TokenInfoDelegate<AppTokens> {
+  @override
+  DateTime expiresAt(AppTokens tokens) => tokens.expiresAt;
+}
+
+Future<void> main() async {
+  final manager = TokenManager<AppTokens>(
+    storage: MemoryTokenStorage(),
+    refreshDelegate: AppRefreshDelegate(),
+    infoDelegate: AppTokenInfoDelegate(),
+  );
+
+  await manager.initialize();
+  await manager.setTokens(
+    AppTokens(
+      accessToken: 'access_123',
+      expiresAt: DateTime.now().add(const Duration(minutes: 30)),
+    ),
+  );
 }
 ```
 
-### Creating a Token Storage
-
-```dart
-class SecureTokensStorage implements TokensStorage<MyTokens> {
-  final FlutterSecureStorage _storage;
-
-  SecureTokensStorage(this._storage);
-
-  @override
-  Future<MyTokens?> getTokens() async {
-    final json = await _storage.read(key: 'tokens');
-    if (json == null) return null;
-    return MyTokens.fromJson(jsonDecode(json));
-  }
-
-  @override
-  Future<void> setTokens(MyTokens? tokens) async {
-    if (tokens == null) {
-      await _storage.delete(key: 'tokens');
-    } else {
-      await _storage.write(
-        key: 'tokens',
-        value: jsonEncode(tokens.toJson()),
-      );
-    }
-  }
-}
-```
-
-### Initialization and Usage
-
-```dart
-final storage = SecureTokensStorage(FlutterSecureStorage());
-final tokensManager = MyTokensManager(storage: storage);
-
-// Initialize
-await tokensManager.initialize();
-
-// Subscribe to token changes
-tokensManager.tokensStream.listen((tokens) {
-  if (tokens != null) {
-    // Tokens updated
-  } else {
-    // Tokens revoked or cleared
-  }
-});
-
-// Set new tokens
-await tokensManager.setTokens(newTokens);
-
-// Clean up resources
-await tokensManager.dispose();
-```
-
-## Implementation Details
-
-- Tokens are automatically refreshed 3 minutes before expiration
-- Concurrent token refresh is supported
-- Secure storage through `TokensStorage` abstraction
-- Token revocation support via `RevokedTokensException` 
+For a complete runnable example, see `example/main.dart`.

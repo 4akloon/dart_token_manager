@@ -128,5 +128,6 @@ class TokenManager<T> {
 
 /// Exception thrown when tokens have been revoked and are no longer valid.
 class RevokedTokensException implements Exception {
+  /// Creates a revoked-tokens exception.
   const RevokedTokensException();
 }

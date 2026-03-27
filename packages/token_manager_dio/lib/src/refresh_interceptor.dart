@@ -2,7 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:token_manager/token_manager.dart';
 import 'refresh_interceptor_delegate.dart';
 
+/// Dio interceptor that injects auth tokens and retries requests after refresh.
 class RefreshInterceptor<T> extends Interceptor {
+  /// Creates an interceptor instance.
   RefreshInterceptor({
     required TokenManager<T> manager,
     Dio? dio,

@@ -1,3 +1,4 @@
+/// Supplies metadata required to schedule proactive token refresh.
 abstract interface class TokenInfoDelegate<T> {
   /// Returns the expiration time for the given tokens.
   ///

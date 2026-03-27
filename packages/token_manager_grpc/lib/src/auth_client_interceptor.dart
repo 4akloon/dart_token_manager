@@ -1,13 +1,15 @@
 import 'dart:async';
 
-import 'package:token_manager/token_manager.dart';
 import 'package:grpc/grpc.dart' as grpc;
+import 'package:token_manager/token_manager.dart';
 
 import 'async_response_future.dart';
 import 'async_response_stream.dart';
 import 'refresh_interceptor_delegate.dart';
 
+/// gRPC client interceptor that injects auth metadata and retries on UNAUTHENTICATED.
 class RefreshInterceptor<T> implements grpc.ClientInterceptor {
+  /// Creates an interceptor instance.
   const RefreshInterceptor({
     required TokenManager<T> manager,
     required RefreshInterceptorDelegate<T> delegate,

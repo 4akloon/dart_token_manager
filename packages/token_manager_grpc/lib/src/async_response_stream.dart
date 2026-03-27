@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:async/async.dart';
 import 'package:grpc/grpc.dart' as grpc;
 
+/// Response stream that can swap the active gRPC stream during retry.
 class AsyncResponseStream<R> extends StreamView<R>
     implements grpc.ResponseStream<R> {
   AsyncResponseStream._({
@@ -14,6 +15,7 @@ class AsyncResponseStream<R> extends StreamView<R>
        _cancelFn = cancel,
        super(stream);
 
+  /// Creates a response stream from forwarding callback.
   factory AsyncResponseStream.fromCallback(
     Future<void> Function(
       StreamController<R> controller,
