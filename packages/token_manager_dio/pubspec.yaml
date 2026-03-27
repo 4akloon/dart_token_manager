@@ -1,6 +1,9 @@
 name: token_manager_dio
-description: A starting point for Dart libraries or applications.
+description: Dio interceptor for token injection, refresh, and automatic retry.
 version: 0.1.0
+repository: https://github.com/4akloon/dart_token_manager
+homepage: https://github.com/4akloon/dart_token_manager
+issue_tracker: https://github.com/4akloon/dart_token_manager/issues
 
 environment:
   sdk: ^3.7.0
