@@ -1,0 +1,13 @@
+name: root
+publish_to: "none"
+
+environment:
+  sdk: ">=3.7.0 <4.0.0"
+
+dev_dependencies:
+  lints: ^6.1.0
+
+workspace:
+  - packages/token_manager
+  - packages/token_manager_dio
+  - packages/token_manager_grpc

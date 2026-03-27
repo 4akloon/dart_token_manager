@@ -1,0 +1,12 @@
+name: token_manager_grpc
+description: A starting point for Dart libraries or applications.
+version: 0.1.0
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  grpc: ">=3.2.0 <6.0.0"
+  token_manager: ^0.1.0
+
+  async: ">=2.11.0 <3.0.0"

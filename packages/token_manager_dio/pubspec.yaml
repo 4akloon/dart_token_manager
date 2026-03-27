@@ -1,0 +1,11 @@
+name: token_manager_dio
+description: A starting point for Dart libraries or applications.
+version: 0.1.0
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  dio: ">=5.2.0 <6.0.0"
+
+  token_manager: ^0.1.0
