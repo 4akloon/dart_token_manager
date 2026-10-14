@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:http/http.dart';
 import 'package:token_manager/token_manager.dart';
 
+import 'client_defaults.dart';
 import 'rejected_response.dart';
 import 'request_copies.dart';
 
@@ -46,21 +47,11 @@ final class HttpTokenClient<T> extends BaseClient {
     bool Function(BaseRequest request)? shouldAuthorize,
   }) : _manager = manager,
        _inner = inner,
-       _headers = headers ?? _bearer,
-       _isAuthFailure = isAuthFailure ?? _isUnauthorized,
-       _shouldAuthorize = shouldAuthorize ?? _authorizesAll {
-    if (headers == null && T != TokenSet) {
-      throw ArgumentError.value(
-        headers,
-        'headers',
-        'is required unless the token type is TokenSet',
-      );
-    }
+       _headers = headers ?? ClientDefaults.bearer,
+       _isAuthFailure = isAuthFailure ?? ClientDefaults.isUnauthorized,
+       _shouldAuthorize = shouldAuthorize ?? ClientDefaults.authorizesAll {
+    ClientDefaults.requireHeaders<T>(headers);
   }
-
-  /// The status that rejects the tokens unless [isAuthFailure] says
-  /// otherwise.
-  static const int _unauthorized = 401;
 
   /// The message of the [ClientException] a request after [close] fails
   /// with.
@@ -153,14 +144,4 @@ final class HttpTokenClient<T> extends BaseClient {
       // still ends the session inside the manager.
     }
   }
-
-  static Map<String, String> _bearer(Object? tokens) => switch (tokens) {
-    TokenSet(:final accessToken) => {'Authorization': 'Bearer $accessToken'},
-    _ => throw StateError('HttpTokenClient needs headers for this token type.'),
-  };
-
-  static bool _isUnauthorized(BaseResponse response) =>
-      response.statusCode == _unauthorized;
-
-  static bool _authorizesAll(BaseRequest request) => true;
 }
