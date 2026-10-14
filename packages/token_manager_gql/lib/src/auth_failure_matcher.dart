@@ -32,7 +32,7 @@ class AuthFailureMatcher {
       response.errors?.any(_isAuthGraphQLError) ?? false;
 
   bool _isAuthGraphQLError(GraphQLError error) {
-    final code = error.extensions?['code'];
+    final Object? code = error.extensions?['code'];
     return code is String && errorCodes.contains(code);
   }
 }
