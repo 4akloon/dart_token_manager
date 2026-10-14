@@ -1,6 +1,6 @@
 name: token_manager_grpc
 description: "Single-flight OAuth/JWT refresh for gRPC: an interceptor that attaches the access token, refreshes once on UNAUTHENTICATED and replays the call."
-version: 0.2.0
+version: 0.2.1
 repository: https://github.com/4akloon/dart_token_manager/tree/main/packages/token_manager_grpc
 homepage: https://github.com/4akloon/dart_token_manager
 issue_tracker: https://github.com/4akloon/dart_token_manager/issues

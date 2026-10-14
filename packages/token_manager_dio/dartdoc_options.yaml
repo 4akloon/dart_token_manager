@@ -6,7 +6,15 @@ dartdoc:
     migration:
       markdown: doc/migration.md
       displayName: Migration from 0.1
+    recipe-replace-refresh-interceptor:
+      markdown: doc/recipes/replace_refresh_interceptor.md
+      displayName: "Recipe: replace a hand-written Dio refresh interceptor"
+    recipe-skip-auth-endpoints:
+      markdown: doc/recipes/skip_auth_endpoints.md
+      displayName: "Recipe: skip auth for the login and refresh endpoints"
   categoryOrder:
     - getting-started
     - migration
+    - recipe-replace-refresh-interceptor
+    - recipe-skip-auth-endpoints
   showUndocumentedCategories: true

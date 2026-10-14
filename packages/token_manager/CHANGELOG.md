@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+Clearer description, topics and recipes.
+
 ## 0.2.1
 
 Internal refactor of the refresh engine; no behaviour change.

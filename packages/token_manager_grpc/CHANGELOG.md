@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+Clearer description, topics and recipes.
+
 ## 0.2.0
 
 `GrpcTokenInterceptor` replaces `RefreshInterceptor`; a call is replayed at most

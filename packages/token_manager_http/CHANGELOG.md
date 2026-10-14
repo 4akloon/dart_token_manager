@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+Clearer description, topics and recipes.
+
 ## 0.1.1
 
 Internal refactor and documentation fixes; no behaviour change.

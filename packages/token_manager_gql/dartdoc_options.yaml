@@ -12,9 +12,13 @@ dartdoc:
     clients:
       markdown: doc/clients.md
       displayName: Clients
+    recipe-queries-and-subscriptions:
+      markdown: doc/recipes/queries_and_subscriptions.md
+      displayName: "Recipe: GraphQL queries and WebSocket subscriptions"
   categoryOrder:
     - getting-started
     - auth-failures
     - subscriptions
     - clients
+    - recipe-queries-and-subscriptions
   showUndocumentedCategories: true

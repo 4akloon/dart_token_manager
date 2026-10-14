@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+Clearer description, topics and recipes.
+
 ## 0.2.0
 
 Rebuilt on the new `token_manager` core; failures to renew tokens are no longer swallowed.

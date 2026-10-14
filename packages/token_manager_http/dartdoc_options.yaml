@@ -9,8 +9,12 @@ dartdoc:
     testing:
       markdown: doc/testing.md
       displayName: Testing
+    recipe-authorized-client:
+      markdown: doc/recipes/authorized_client.md
+      displayName: "Recipe: an authorized http.Client"
   categoryOrder:
     - getting-started
     - replay
     - testing
+    - recipe-authorized-client
   showUndocumentedCategories: true

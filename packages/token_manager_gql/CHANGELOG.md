@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+Clearer description, topics and recipes.
+
 ## 0.1.1
 
 - Fix: a 403 whose GraphQL errors carry `extensions.code: UNAUTHENTICATED` is

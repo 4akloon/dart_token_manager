@@ -21,6 +21,18 @@ dartdoc:
     migration:
       markdown: doc/migration.md
       displayName: Migrating from 0.1
+    recipe-login-and-set-tokens:
+      markdown: doc/recipes/login_and_set_tokens.md
+      displayName: "Recipe: sign in and store the tokens"
+    recipe-secure-token-store:
+      markdown: doc/recipes/secure_token_store.md
+      displayName: "Recipe: keep the session in secure storage"
+    recipe-session-expiry:
+      markdown: doc/recipes/session_expiry.md
+      displayName: "Recipe: send the user to sign-in when the session ends"
+    recipe-testing-without-network:
+      markdown: doc/recipes/testing_without_network.md
+      displayName: "Recipe: test code that uses tokens without a network"
   categoryOrder:
     - getting-started
     - concepts
@@ -29,4 +41,8 @@ dartdoc:
     - streams
     - testing
     - migration
+    - recipe-login-and-set-tokens
+    - recipe-secure-token-store
+    - recipe-session-expiry
+    - recipe-testing-without-network
   showUndocumentedCategories: true

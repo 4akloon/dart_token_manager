@@ -6,7 +6,11 @@ dartdoc:
     migration:
       markdown: doc/migration.md
       displayName: Migrating from 0.1
+    recipe-unary-and-streaming:
+      markdown: doc/recipes/unary_and_streaming.md
+      displayName: "Recipe: unary and streaming gRPC calls with one refresh"
   categoryOrder:
     - getting-started
     - migration
+    - recipe-unary-and-streaming
   showUndocumentedCategories: true

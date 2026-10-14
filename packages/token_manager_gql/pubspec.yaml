@@ -1,6 +1,6 @@
 name: token_manager_gql
 description: "Single-flight OAuth/JWT refresh for GraphQL: a gql_link Link that attaches the access token, refreshes once on a rejection and replays the request."
-version: 0.1.1
+version: 0.1.2
 repository: https://github.com/4akloon/dart_token_manager/tree/main/packages/token_manager_gql
 homepage: https://github.com/4akloon/dart_token_manager
 issue_tracker: https://github.com/4akloon/dart_token_manager/issues
