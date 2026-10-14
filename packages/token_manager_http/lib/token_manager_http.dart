@@ -3,3 +3,5 @@
 ///
 /// {@category getting-started}
 library;
+
+export 'src/http_token_client.dart' show HttpTokenClient;
