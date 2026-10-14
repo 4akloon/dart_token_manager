@@ -60,8 +60,8 @@ final class TokenManagerLink<T> extends Link {
   /// manager's failures ([NotAuthenticated], [InvalidGrant], [Transient])
   /// arrive as error events, each wrapped in a [LinkException] whose
   /// `originalException` is the failure, not as exceptions of this method.
-  /// Throws a
-  /// [StateError] when [forward] is null: this link cannot terminate a chain.
+  /// Throws a [StateError] when [forward] is null: this link cannot terminate
+  /// a chain.
   @override
   Stream<Response> request(Request request, [NextLink? forward]) {
     if (forward == null) {

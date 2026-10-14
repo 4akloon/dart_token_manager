@@ -94,7 +94,7 @@ A server rejects tokens on one of two channels, and `AuthFailureMatcher` recogni
 
 | Channel | Default rule |
 |---|---|
-| An error event, such as `HttpLink`'s `HttpLinkServerException` | a `ServerException` whose `statusCode` is **401** |
+| An error event, such as `HttpLink`'s `HttpLinkServerException` | a `ServerException` whose `statusCode` is **401**, or a **403** whose parsed response carries `UNAUTHENTICATED` |
 | A response whose `errors` carry an auth code (often an HTTP 200) | `errors[].extensions.code` is **`UNAUTHENTICATED`** |
 
 Set other codes with `AuthFailureMatcher(statusCodes: {401, 419}, errorCodes: {'invalid-jwt'})`.
@@ -124,7 +124,7 @@ final class AppAuthFailureMatcher extends AuthFailureMatcher {
 
 A 403 whose parsed body carries the `UNAUTHENTICATED` code (a server exception) is replayed once like a
 401; a 403 without that code is a missing permission and is not replayed. Add 403 to `statusCodes` to replay
-every 403.
+every 403. A 403 whose parsed response carries an `errorCodes` value is always a rejection, whatever `statusCodes` holds. Override `isAuthError` to change that.
 
 **[doc/auth_failures.md](doc/auth_failures.md)**
 

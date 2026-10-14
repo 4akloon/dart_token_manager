@@ -9,7 +9,7 @@ A server reports a rejection in one of two ways:
 
 | Channel | Default rule |
 |---|---|
-| An error event, such as `HttpLink`'s `HttpLinkServerException` | a `ServerException` whose `statusCode` is 401 |
+| An error event, such as `HttpLink`'s `HttpLinkServerException` | a `ServerException` whose `statusCode` is 401, or a 403 whose parsed response carries `UNAUTHENTICATED` |
 | A response whose `errors` carry an auth code (often an HTTP 200) | `errors[].extensions.code` is `UNAUTHENTICATED` |
 
 `isAuthError` checks the first, `isAuthResponse` the second. Set other codes in
@@ -25,7 +25,7 @@ const matcher = AuthFailureMatcher(
 ```
 
 Pass it to the link as `matcher:`. The defaults are replaced, not extended: with
-`statusCodes: {419}` a 401 is no longer an auth failure.
+`statusCodes: {419}` a 401 is no longer an auth failure. A 403 whose parsed response carries an `errorCodes` value is always a rejection, whatever `statusCodes` holds. Override `isAuthError` to change that.
 
 ## When a rejection is replayed
 
@@ -67,7 +67,7 @@ final class AppAuthFailureMatcher extends AuthFailureMatcher {
 
 `HttpLink` throws an `HttpLinkServerException` for every HTTP status of 300 or
 more whose body parses as GraphQL JSON. By default the matcher treats such a
-403 as a rejection when its parsed response carries an `errorCodes` value
+403 as a rejection, whatever `statusCodes` holds, when its parsed response carries an `errorCodes` value
 (`UNAUTHENTICATED`) in `errors[].extensions.code`: the request is replayed once
 with refreshed tokens, through the same single-flight path as a 401. A 403
 without that code (for example `FORBIDDEN`) is a missing permission, not a

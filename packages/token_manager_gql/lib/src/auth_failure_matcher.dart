@@ -28,11 +28,15 @@ import 'package:gql_link/gql_link.dart';
 ///
 /// {@category auth-failures}
 class AuthFailureMatcher {
+  static const int _forbidden = 403;
+
   /// Creates a matcher for the HTTP [statusCodes] of a [ServerException] and
   /// the [errorCodes] in `errors[].extensions.code` of a [Response].
   ///
   /// The defaults are replaced, not extended: with `statusCodes: {419}` a 401
-  /// is no longer an auth failure.
+  /// is no longer an auth failure. A 403 whose parsed response carries an
+  /// [errorCodes] value is always a rejection, whatever [statusCodes] holds;
+  /// override [isAuthError] to change that.
   const AuthFailureMatcher({
     this.statusCodes = const {401},
     this.errorCodes = const {'UNAUTHENTICATED'},
@@ -48,7 +52,7 @@ class AuthFailureMatcher {
   ///
   /// By default this holds for a [ServerException] whose status code is in
   /// [statusCodes], and for one with status 403 whose parsed response carries
-  /// an error code from [errorCodes]. A 403 without such a code is a missing
+  /// an error code from [errorCodes], whatever [statusCodes] holds. A 403 without such a code is a missing
   /// permission and is not an auth failure.
   bool isAuthError(Object error) =>
       error is ServerException &&
@@ -57,11 +61,8 @@ class AuthFailureMatcher {
   bool _isForbiddenRejection(ServerException error) {
     final Response? parsed = error.parsedResponse;
     return error.statusCode == _forbidden &&
-        parsed != null &&
-        isAuthResponse(parsed);
+        (parsed?.errors?.any(_isAuthGraphQLError) ?? false);
   }
-
-  static const int _forbidden = 403;
 
   /// Whether one of the `errors` of [response] means the tokens were rejected.
   ///

@@ -1,5 +1,6 @@
 import 'package:gql_link/gql_link.dart';
 import 'package:test/test.dart';
+import 'package:token_manager_gql/token_manager_gql.dart';
 
 import 'helpers/link_fixture.dart';
 
@@ -49,5 +50,12 @@ void main() {
 
     expect(events, [forbidden]);
     expect(fixture.refresher.calls, 0);
+  });
+
+  test('a 403 with UNAUTHENTICATED is replayed whatever statusCodes holds', () {
+    const matcher = AuthFailureMatcher(statusCodes: {419});
+
+    expect(matcher.isAuthError(LinkFixture.forbidden()), isTrue);
+    expect(matcher.isAuthError(LinkFixture.unauthorized), isFalse);
   });
 }
