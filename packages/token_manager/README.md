@@ -1,13 +1,29 @@
 # token_manager
 
 [![Pub Version](https://img.shields.io/pub/v/token_manager.svg)](https://pub.dev/packages/token_manager)
+![Dart](https://img.shields.io/badge/Dart-%3E%3D3.10-0175C2?logo=dart&logoColor=white)
+![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
+![Part of](https://img.shields.io/badge/part_of-dart__token__manager-informational)
 
-Token lifecycle management for Dart: storage, single-flight refresh and an
-observable session state. The core has no dependencies and knows nothing about
-HTTP; transport packages (`token_manager_dio`, `token_manager_grpc`) plug into
-it.
+**The core of [dart_token_manager](../../README.md)** — storage, single-flight refresh and an observable
+session state for authentication tokens. Pure Dart, no runtime dependencies, and it knows nothing about
+HTTP: the transport adapters ([`token_manager_dio`](../token_manager_dio),
+[`token_manager_grpc`](../token_manager_grpc)) plug into it.
 
-## Installation
+> Refresh is on demand. There is no background timer: tokens are refreshed when `validToken`, `authorize`
+> or a rejected token asks for it.
+
+## Contents
+
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Session state](#session-state)
+- [Authorizing calls](#authorizing-calls)
+- [Errors](#errors)
+- [Migrating from 0.1](#migrating-from-01)
+- [Reference](#reference)
+
+## Install
 
 ```yaml
 dependencies:
@@ -19,46 +35,118 @@ dependencies:
 ```dart
 import 'package:token_manager/token_manager.dart';
 
-final manager = TokenManager<TokenSet>.create(
-  store: InMemoryTokenStore<TokenSet>(), // or a persistent TokenStore
-  refresher: MyRefresher(), // implements TokenRefresher<TokenSet>
-  info: const TokenSetInfo(),
-);
+final class MyRefresher implements TokenRefresher<TokenSet> {
+  @override
+  Future<TokenSet> refresh(TokenSet current) async {
+    // Call your token endpoint with current.refreshToken.
+    return TokenSet(
+      accessToken: 'new-access',
+      refreshToken: 'new-refresh',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+    );
+  }
+}
 
-await manager.setTokens(
-  TokenSet(
-    accessToken: 'access',
-    refreshToken: 'refresh',
-    expiresAt: DateTime.now().add(const Duration(hours: 1)),
-  ),
-);
+Future<void> main() async {
+  final manager = TokenManager<TokenSet>.create(
+    store: InMemoryTokenStore<TokenSet>(), // or a persistent TokenStore
+    refresher: MyRefresher(),
+    info: const TokenSetInfo(),
+  );
 
-final tokens = await manager.validToken(); // refreshes when about to expire
+  await manager.setTokens(
+    TokenSet(
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+    ),
+  );
+
+  final tokens = await manager.validToken(); // refreshes when about to expire
+  print(tokens.accessToken);
+}
 ```
 
-`TokenSet` is a ready-made token value; use your own type `T` by implementing
-`TokenStore<T>`, `TokenRefresher<T>` and `TokenInfo<T>`.
+`TokenSet` is a ready-made token value; to use your own type `T`, implement `TokenStore<T>`,
+`TokenRefresher<T>` and `TokenInfo<T>`. A runnable version is in [example/main.dart](example/main.dart).
 
-A runnable version is in [example/main.dart](example/main.dart).
+**[doc/getting_started.md](doc/getting_started.md)** walks through the setup step by step.
 
-## Concepts
+## Session state
 
-- **`validToken({rejected})`** returns tokens that are valid now. Concurrent
-  callers share one refresh. Pass the tokens a server just rejected as
-  `rejected`: they are refreshed unless another caller already replaced them.
-  It throws `NotAuthenticated` when there is no session.
-- **Typed failures.** A `TokenRefresher` throws `InvalidGrant` when the refresh
-  token was rejected for good (the session ends and `states` emits
-  `Unauthenticated`) or `Transient` when the failure may go away (the session
-  stays). Any other exception is treated as transient.
-- **`states`** is a stream that replays the latest `AuthState` to each
-  listener: `Unauthenticated`, `Authenticated` or `Refreshing`.
-- **`authorize`** runs a call with valid tokens and replays it once after an
-  auth failure. **`authorizeStream`** does the same for streams without
-  `await for`, so pause, resume and cancel reach the source.
-- Refresh happens on demand, when `validToken`, `authorize` or a rejected token
-  asks for it; there is no background timer.
+`manager.states` replays the latest `AuthState` to every listener, then emits each change.
+
+```dart
+manager.states.listen((state) {
+  switch (state) {
+    case Unauthenticated():
+      print('signed out');
+    case Authenticated(:final tokens):
+      print('signed in: ${tokens.accessToken}');
+    case Refreshing():
+      print('refreshing');
+  }
+});
+```
+
+| State | Meaning |
+|---|---|
+| `Unauthenticated` | There are no tokens; the user is signed out. |
+| `Authenticated` | Signed in with the carried tokens. |
+| `Refreshing` | A refresh is running; the carried tokens are the ones being replaced. |
+
+**[doc/concepts.md](doc/concepts.md)** explains how the state and the refresh fit together.
+
+## Authorizing calls
+
+`authorize` runs a call with valid tokens and replays it once when the server rejects them.
+`authorizeStream` does the same for streams, and never uses `await for`, so pause, resume and cancel
+reach the source.
+
+```dart
+final user = await manager.authorize(
+  (tokens) => api.fetchUser(tokens.accessToken),
+  isAuthFailure: (error) => error is ApiException && error.statusCode == 401,
+);
+
+final events = manager.authorizeStream(
+  (tokens) => api.watchEvents(tokens.accessToken),
+  isAuthFailure: (error) => error is ApiException && error.statusCode == 401,
+);
+```
+
+`validToken({rejected})` is the primitive underneath: concurrent callers share one refresh, and the tokens
+a server just rejected are refreshed unless another caller already replaced them.
+
+**[doc/streams.md](doc/streams.md)** · **[doc/refreshing.md](doc/refreshing.md)**
+
+## Errors
+
+| Thrown | When |
+|---|---|
+| `NotAuthenticated` | `validToken` or `authorize` ran without a session. |
+| `InvalidGrant` | The refresh token was rejected for good; the session ends and `states` emits `Unauthenticated`. |
+| `Transient` | The refresh failed for a reason that may go away; the session stays and the next call retries. |
+
+A `TokenRefresher` throws `InvalidGrant` or `Transient`; any other exception it throws is treated as
+transient. Storage failures are never reported as refresh failures.
+
+**[doc/storage.md](doc/storage.md)** covers the failure semantics of the store.
 
 ## Migrating from 0.1
 
-See [doc/migration.md](doc/migration.md).
+The old API still works in 0.2, marked `@Deprecated`. See **[doc/migration.md](doc/migration.md)**.
+
+## Reference
+
+| Guide | Topic |
+|---|---|
+| [Getting started](doc/getting_started.md) | Create a manager, sign in, read tokens, authorize a call |
+| [Concepts](doc/concepts.md) | Layers, single-flight refresh, rejected-token compare, sessions |
+| [Storage](doc/storage.md) | `TokenStore`, `InMemoryTokenStore`, writing a secure-storage store |
+| [Refreshing](doc/refreshing.md) | `TokenRefresher`, `TokenInfo` and skew, failure types |
+| [Streams](doc/streams.md) | `authorizeStream` and its pause/resume/cancel contract |
+| [Testing](doc/testing.md) | `Clock`, fakes, how this package's tests are built |
+| [Migrating from 0.1](doc/migration.md) | Mapping from the deprecated API |
+
+Generate API docs: `cd packages/token_manager && dart doc .`

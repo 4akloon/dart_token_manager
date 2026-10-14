@@ -4,6 +4,8 @@ import 'dart:async';
 ///
 /// This interface defines the contract for token storage implementations.
 /// Implementations should handle the persistence of tokens in a secure manner.
+///
+/// {@category migration}
 @Deprecated('Use TokenStore, which has read, write and delete.')
 abstract interface class TokenStorage<T> {
   /// Retrieves the stored tokens.

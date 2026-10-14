@@ -1,6 +1,11 @@
 import 'token_store.dart';
 
 /// A [TokenStore] that keeps the tokens in memory only.
+///
+/// Ideal for tests and for sessions that should end with the process; use a
+/// store backed by secure storage to survive restarts.
+///
+/// {@category storage}
 final class InMemoryTokenStore<T> implements TokenStore<T> {
   /// Creates a store, optionally holding [initial] tokens.
   InMemoryTokenStore([T? initial]) : _tokens = initial;

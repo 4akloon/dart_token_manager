@@ -1,5 +1,7 @@
 /// Token lifecycle management: storage, single-flight refresh and an
 /// observable session state.
+///
+/// {@category getting-started}
 library;
 
 // The barrel re-exports the deprecated types so existing users keep working.

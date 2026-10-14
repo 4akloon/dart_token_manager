@@ -1,4 +1,6 @@
 /// Defines how [TokenManager] refreshes expired tokens.
+///
+/// {@category migration}
 @Deprecated(
   'Use TokenRefresher; set the expiry margin with '
   'TokenManager.create(skew: ...).',

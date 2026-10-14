@@ -16,6 +16,22 @@ import 'token_store.dart';
 
 /// Manages the tokens of one session: storage, single-flight refresh and an
 /// observable state.
+///
+/// Refresh is on demand: tokens are refreshed when [validToken], [authorize]
+/// or a rejected token asks for it, never by a background timer. Concurrent
+/// callers share one refresh.
+///
+/// ```dart
+/// final manager = TokenManager<TokenSet>.create(
+///   store: InMemoryTokenStore<TokenSet>(),
+///   refresher: MyRefresher(),
+///   info: const TokenSetInfo(),
+/// );
+/// await manager.setTokens(tokens);
+/// final valid = await manager.validToken();
+/// ```
+///
+/// {@category getting-started}
 class TokenManager<T> {
   /// Creates a manager from the old storage and delegates.
   @Deprecated('Use TokenManager.create.')
