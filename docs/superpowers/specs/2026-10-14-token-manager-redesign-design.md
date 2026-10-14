@@ -346,8 +346,6 @@ Risks:
 
 - Storage packages depend on Flutter plugins, so the shared workspace probably
   needs `flutter pub get`; the CI needs the Flutter SDK. Decide in phase 0 or 4.
-- The APIs of `gql_link`, `graphql_flutter` and `ferry` were not read yet and
-  must be checked before phase 3.
 - Multi-isolate use is not covered by in-memory single-flight (phase 6).
 
 Open decisions (defaults in brackets):
