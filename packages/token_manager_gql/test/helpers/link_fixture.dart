@@ -67,6 +67,20 @@ final class LinkFixture {
     context: context,
   );
 
+  /// A response whose error has `extensions.code` [code] and whose data is
+  /// [data].
+  static Response rejected({
+    String code = 'UNAUTHENTICATED',
+    String message = 'not signed in',
+    Map<String, Object?>? data,
+  }) => Response(
+    data: data,
+    errors: [
+      GraphQLError(message: message, extensions: {'code': code}),
+    ],
+    response: const {},
+  );
+
   /// Sends [request] through [link] and collects every event and error until
   /// the stream ends.
   Future<List<Object>> send(Request request) {

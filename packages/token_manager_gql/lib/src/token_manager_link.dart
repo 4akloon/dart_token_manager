@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:gql_exec/gql_exec.dart';
 import 'package:gql_link/gql_link.dart';
 import 'package:token_manager/token_manager.dart';
@@ -13,9 +15,12 @@ import 'skip_authorization.dart';
 /// combine it with graphql's `AuthLink`. The link never refreshes by itself:
 /// it asks the [TokenManager] for valid tokens and reports the rejected ones.
 ///
-/// A rejection is an error event that [AuthFailureMatcher.isAuthError]
-/// accepts. Only a rejection before the first response is replayed, and only
-/// once; when the replay is rejected too, its error is delivered as is.
+/// A rejection arrives as an error event that [AuthFailureMatcher.isAuthError]
+/// accepts, or as a [Response] that [AuthFailureMatcher.isAuthResponse]
+/// accepts and that has no `data`. A response with `data` is never replayed,
+/// because a mutation may already have run. Only a rejection before the first
+/// response is replayed, and only once; when the replay is rejected too, its
+/// error or response is delivered as is.
 final class TokenManagerLink<T> extends Link {
   /// Creates a link that sends the [headers] built from the [manager]'s tokens
   /// and recognises rejections with [matcher].
@@ -48,10 +53,16 @@ final class TokenManagerLink<T> extends Link {
     if (request.context.entry<SkipAuthorization>() != null) {
       return forward(request);
     }
-    return _manager.authorizeStream<Response>(
-      (tokens) => _send(request, tokens, forward),
-      isAuthFailure: _matcher.isAuthError,
-    );
+    return _manager
+        .authorizeStream<Response>(
+          (tokens) => _send(request, tokens, forward),
+          isAuthFailure: _isAuthFailure,
+        )
+        .transform(
+          StreamTransformer<Response, Response>.fromHandlers(
+            handleError: _deliverRejectedResponse,
+          ),
+        );
   }
 
   /// Sends a copy of [original] that carries the headers of [tokens]; every
@@ -62,6 +73,45 @@ final class TokenManagerLink<T> extends Link {
         headers: {...?entry?.headers, ..._headers(tokens)},
       ),
     );
-    return forward(authorized);
+    return forward(authorized).transform(
+      StreamTransformer<Response, Response>.fromHandlers(
+        handleData: _rejectUnauthenticated,
+      ),
+    );
   }
+
+  /// Turns a rejected [response] without data into an error event, which is
+  /// the only channel on which `authorizeStream` replays.
+  void _rejectUnauthenticated(Response response, EventSink<Response> sink) {
+    if (response.data == null && _matcher.isAuthResponse(response)) {
+      sink.addError(_RejectedResponse(response));
+    } else {
+      sink.add(response);
+    }
+  }
+
+  bool _isAuthFailure(Object error) =>
+      error is _RejectedResponse || _matcher.isAuthError(error);
+
+  /// Delivers a rejected response that was not replayed as the response it
+  /// was, so the client sees the server's `errors` unchanged.
+  void _deliverRejectedResponse(
+    Object error,
+    StackTrace stackTrace,
+    EventSink<Response> sink,
+  ) {
+    if (error is _RejectedResponse) {
+      sink.add(error.response);
+    } else {
+      sink.addError(error, stackTrace);
+    }
+  }
+}
+
+/// Carries a rejected [Response] through the error channel of
+/// `authorizeStream`; it never leaves [TokenManagerLink].
+final class _RejectedResponse implements Exception {
+  const _RejectedResponse(this.response);
+
+  final Response response;
 }
