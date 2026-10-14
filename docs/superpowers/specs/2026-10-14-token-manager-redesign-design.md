@@ -89,13 +89,13 @@ token_manager                       core, pure Dart, no dependencies (rxdart rem
 |- token_manager_dio                + dio
 |- token_manager_http               + http
 |- token_manager_grpc               + grpc
-|- token_manager_gql_link           + gql_link  (graphql_flutter, ferry)
+|- token_manager_gql                + gql_link  (graphql_flutter, ferry)
 |- token_manager_secure_storage     + flutter_secure_storage
 `- token_manager_shared_preferences + shared_preferences
 ```
 
 - Adapters depend only on the core and their transport. Public names are unique:
-  `DioTokenInterceptor`, `HttpTokenClient`, `GrpcTokenInterceptor`, `GqlTokenLink`.
+  `DioTokenInterceptor`, `HttpTokenClient`, `GrpcTokenInterceptor`, `TokenManagerLink`.
 - Storage packages depend only on the core and their plugin, so core users do
   not pull Flutter dependencies.
 - `token_manager`, `token_manager_dio` and `token_manager_grpc` keep their
@@ -201,13 +201,13 @@ exactly once.
 - **package:http** (`HttpTokenClient<T> extends BaseClient`): wraps an inner
   `Client`. Replay works for `Request`; `StreamedRequest` and multipart bodies
   that cannot be recreated return the error without replay.
-- **Streams** (gRPC responses, gql subscriptions): no `await for`. `RelayStream`
+- **Streams** (gRPC responses): no `await for`. `RelayStream`
   creates a `StreamController` and manages the lifecycle:
   `onListen` obtains `validToken()` first, then opens the source and subscribes
   with `listen`; if the listener cancelled before the token arrived, the source
   is never opened; `onPause` and `onResume` are forwarded to the source
   subscription so backpressure is preserved; `onCancel` cancels the source,
-  which cancels the gRPC call or gql request. An auth failure before the first
+  which cancels the gRPC call. An auth failure before the first
   event triggers one replay with a new token. After the first event the error is
   passed on and the application resubscribes using `states`, to avoid
   duplicates. gRPC client-streaming request streams are single-subscription and
@@ -216,9 +216,18 @@ exactly once.
   dead `shouldRefresh` becomes a working `isAuthFailure`; errors on the
   `headers` and `trailers` futures of `AsyncResponseFuture` and
   `AsyncResponseStream` no longer escape unhandled.
-- **gql** (`GqlTokenLink<T>`): a `Link` for `gql_link`, used by `graphql_flutter`
-  and `ferry`. Queries and mutations use `authorize`; subscriptions use
-  `RelayStream`.
+- **gql** (`TokenManagerLink<T>`): a `Link` for `gql_link`, used by
+  `graphql_flutter` and `ferry`. It is built on the core's `authorizeStream`
+  for every operation it handles (not `authorize`, not `RelayStream` directly).
+  An auth failure arrives on two channels: an error event
+  (`ServerException.statusCode`) and a normal `Response` whose `errors` carry
+  an auth code (`AuthFailureMatcher`); response-level failures are replayed
+  only when `data == null`, because a mutation may already have run. Anonymous
+  operations (login, sign-up) set the `SkipAuthorization` context entry and
+  bypass the manager. Subscriptions are not handled by the link: WebSocket
+  clients ignore HTTP headers, so `TokenManagerSocketAuth` provides
+  `initialPayload` and `onConnectionLost` callbacks (default auth close code
+  4401, configurable).
 
 ## 7. Migration
 
@@ -314,7 +323,7 @@ dependency besides the SDK.
 2. `token_manager_http`.
 3. `token_manager_grpc` on `RelayStream`, with its deprecated subclass; tests on
    an in-process server, covering pause, resume and cancel.
-4. `token_manager_gql_link`; tests with subscriptions and cancellation.
+4. `token_manager_gql`; tests with cancellation and WebSocket auth callbacks.
 
 Done when every adapter has a test where concurrent 401s produce exactly one
 refresh and one replay, and the stream adapters have a test where pause,
@@ -337,8 +346,6 @@ Risks:
 
 - Storage packages depend on Flutter plugins, so the shared workspace probably
   needs `flutter pub get`; the CI needs the Flutter SDK. Decide in phase 0 or 4.
-- The APIs of `gql_link`, `graphql_flutter` and `ferry` were not read yet and
-  must be checked before phase 3.
 - Multi-isolate use is not covered by in-memory single-flight (phase 6).
 
 Open decisions (defaults in brackets):

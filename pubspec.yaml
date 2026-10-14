@@ -10,4 +10,5 @@ dev_dependencies:
 workspace:
   - packages/token_manager
   - packages/token_manager_dio
+  - packages/token_manager_gql
   - packages/token_manager_grpc
