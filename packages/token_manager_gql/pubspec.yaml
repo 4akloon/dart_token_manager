@@ -1,0 +1,29 @@
+name: token_manager_gql
+description: A gql_link Link that attaches token_manager tokens to GraphQL requests and replays once after an auth failure.
+version: 0.1.0
+repository: https://github.com/4akloon/dart_token_manager
+homepage: https://github.com/4akloon/dart_token_manager
+issue_tracker: https://github.com/4akloon/dart_token_manager/issues
+topics:
+  - graphql
+  - gql
+  - authentication
+
+environment:
+  sdk: ^3.10.0
+
+resolution: workspace
+
+# gql_exec 1.1.0 is retracted while gql_link 1.1.0 requires gql_exec ^1.1.0,
+# so `^1.0.0` resolves to the stable pair gql_link 1.0.0+1 and gql_exec
+# 1.0.0+1. Their lib/ API is the same as gql_link 1.1.0. Do not raise the
+# floor to 1.1.0: it only resolves to a gql_exec prerelease. `^1.0.0` is also
+# what graphql 5.x requires, and ferry accepts gql_link <2.0.0.
+dependencies:
+  gql_exec: ^1.0.0
+  gql_link: ^1.0.0
+  token_manager: ^0.1.0
+
+dev_dependencies:
+  gql: ^1.0.0
+  test: ^1.31.0
