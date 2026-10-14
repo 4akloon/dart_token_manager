@@ -35,6 +35,14 @@ void main() {
     expect(copy.contentLength, 6);
   });
 
+  test('keeps whether the rejected response followed a redirect', () async {
+    final original = RejectedResponses.unauthorized(isRedirect: true);
+
+    final copy = (await RejectedResponse.read(original)).toResponse();
+
+    expect(copy.isRedirect, isTrue);
+  });
+
   test('keeps the url of a response that reports one', () async {
     final redirected = Uri.parse('https://api.example.com/v2/me');
 

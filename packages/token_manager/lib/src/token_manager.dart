@@ -32,6 +32,7 @@ import 'token_store.dart';
 /// ```
 ///
 /// {@category getting-started}
+/// {@category streams}
 class TokenManager<T> {
   /// Creates a manager from the old storage and delegates.
   @Deprecated('Use TokenManager.create.')

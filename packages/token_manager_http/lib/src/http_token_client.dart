@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:http/http.dart';
 import 'package:token_manager/token_manager.dart';
 
+import 'client_defaults.dart';
 import 'rejected_response.dart';
 import 'request_copies.dart';
 
@@ -10,15 +11,17 @@ import 'request_copies.dart';
 /// [TokenManager] and replays a request once after the server rejects them.
 ///
 /// The client never refreshes by itself: it asks the manager for valid
-/// tokens before every request and reports the tokens a server rejected
-/// through [TokenManager.authorize], so concurrent requests share one
-/// refresh. Every authorized request is sent as a copy, so the caller's
-/// request never gets the token header.
+/// tokens before every request that passes `shouldAuthorize` and reports the
+/// tokens a server rejected, so concurrent requests share one refresh. Such a
+/// request is sent as a copy, so the caller's request never gets the token
+/// header; any other request is sent unchanged, without tokens, and is never
+/// replayed.
 ///
 /// Only a [Request] or an [AbortableRequest] is replayed, because its body is
 /// in memory; the rejected body is read first so its connection is released.
 /// A [StreamedRequest], a [MultipartRequest] and any other request are sent
-/// once, and their rejection is returned as is.
+/// once with tokens, their rejection is returned as is, and the rejected
+/// tokens are reported to the manager so the next request gets new ones.
 ///
 /// [close] closes the inner client but not the manager: dispose the manager
 /// yourself when the session ends.
@@ -46,21 +49,11 @@ final class HttpTokenClient<T> extends BaseClient {
     bool Function(BaseRequest request)? shouldAuthorize,
   }) : _manager = manager,
        _inner = inner,
-       _headers = headers ?? _bearer,
-       _isAuthFailure = isAuthFailure ?? _isUnauthorized,
-       _shouldAuthorize = shouldAuthorize ?? _authorizesAll {
-    if (headers == null && T != TokenSet) {
-      throw ArgumentError.value(
-        headers,
-        'headers',
-        'is required unless the token type is TokenSet',
-      );
-    }
+       _headers = headers ?? ClientDefaults.bearer,
+       _isAuthFailure = isAuthFailure ?? ClientDefaults.isUnauthorized,
+       _shouldAuthorize = shouldAuthorize ?? ClientDefaults.authorizesAll {
+    ClientDefaults.requireHeaders<T>(headers);
   }
-
-  /// The status that rejects the tokens unless [isAuthFailure] says
-  /// otherwise.
-  static const int _unauthorized = 401;
 
   /// The message of the [ClientException] a request after [close] fails
   /// with.
@@ -153,14 +146,4 @@ final class HttpTokenClient<T> extends BaseClient {
       // still ends the session inside the manager.
     }
   }
-
-  static Map<String, String> _bearer(Object? tokens) => switch (tokens) {
-    TokenSet(:final accessToken) => {'Authorization': 'Bearer $accessToken'},
-    _ => throw StateError('HttpTokenClient needs headers for this token type.'),
-  };
-
-  static bool _isUnauthorized(BaseResponse response) =>
-      response.statusCode == _unauthorized;
-
-  static bool _authorizesAll(BaseRequest request) => true;
 }

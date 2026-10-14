@@ -46,4 +46,17 @@ void main() {
     );
     expect(fixture.inner.requests, isEmpty);
   });
+
+  test('a request that is not authorized still fails after close', () async {
+    final fixture = ClientFixture();
+    final client = fixture.clientWith(shouldAuthorize: (_) => false);
+
+    client.close();
+
+    await expectLater(
+      client.get(ClientFixture.url),
+      throwsA(isA<ClientException>()),
+    );
+    expect(fixture.inner.requests, isEmpty);
+  });
 }

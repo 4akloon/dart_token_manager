@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+
+Internal refactor of the refresh engine; no behaviour change.
+
+- The engine is split into smaller internal classes (refresh policy, serial
+  queue, stored-token loader, session, refresh attempt). The public API and
+  behaviour are unchanged.
+- Docs: `TokenManager` is also listed under the Streams category.
+
 ## 0.2.0
 
 Single-flight refresh with typed failures and an observable session state; the

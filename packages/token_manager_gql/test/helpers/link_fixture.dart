@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:gql/language.dart';
 import 'package:gql_exec/gql_exec.dart';
 import 'package:gql_link/gql_link.dart';
+import 'package:test/test.dart';
 import 'package:token_manager/token_manager.dart';
 import 'package:token_manager_gql/token_manager_gql.dart';
 
@@ -45,6 +46,18 @@ final class LinkFixture {
 
   /// An HTTP 401 as `HttpLink` reports it.
   static const ServerException unauthorized = ServerException(statusCode: 401);
+
+  /// An HTTP 403 as `HttpLink` reports it for a GraphQL JSON body: the
+  /// parsed response carries `extensions.code` [code].
+  static ServerException forbidden({String code = 'UNAUTHENTICATED'}) =>
+      ServerException(statusCode: 403, parsedResponse: rejected(code: code));
+
+  /// Matches a [LinkException] whose `originalException` is a [T].
+  static Matcher wrapping<T>() => isA<LinkException>().having(
+    (e) => e.originalException,
+    'originalException',
+    isA<T>(),
+  );
 
   /// A successful response.
   static const Response ok = Response(data: {'me': 'ada'}, response: {});

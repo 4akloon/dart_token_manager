@@ -38,18 +38,16 @@ final class RecordingClient extends BaseClient {
     _closeCalls++;
   }
 
-  /// A single-subscription body that counts as unread until it is listened
-  /// to.
+  /// A single-subscription body that counts as unread until it is done.
   Stream<List<int>> _bodyOf(FakeAnswer answer) {
     _unreadBodies++;
     return Stream<List<int>>.multi((listener) {
-      _unreadBodies--;
       listener.add(utf8.encode(answer.body));
       final failure = answer.failure;
       if (failure != null) {
         listener.addError(failure);
       }
-      unawaited(listener.close());
+      unawaited(listener.close().whenComplete(() => _unreadBodies--));
     });
   }
 

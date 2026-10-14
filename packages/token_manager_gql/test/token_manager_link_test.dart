@@ -88,7 +88,7 @@ void main() {
 
     final events = await fixture.send(fixture.query());
 
-    expect(events, [isA<InvalidGrant>()]);
+    expect(events, [LinkFixture.wrapping<InvalidGrant>()]);
     expect(fixture.terminal.requests, hasLength(1));
   });
 
@@ -156,7 +156,7 @@ void main() {
 
     final events = await fixture.send(fixture.query());
 
-    expect(events, [isA<NotAuthenticated>()]);
+    expect(events, [LinkFixture.wrapping<NotAuthenticated>()]);
     expect(fixture.terminal.requests, isEmpty);
   });
 
