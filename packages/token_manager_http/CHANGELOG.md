@@ -18,3 +18,5 @@ Initial release of the `package:http` adapter for token_manager.
   with the tokens `TokenManager.authorize` provides; concurrent rejections
   share one refresh. The rejected body is read first so its connection is
   released, and a rejection that is not replayed is returned with its body.
+- `close()` closes the inner client once and leaves the manager open; a
+  request after `close()` fails with a `ClientException`.

@@ -20,6 +20,9 @@ import 'request_copies.dart';
 /// A [StreamedRequest], a [MultipartRequest] and any other request are sent
 /// once, and their rejection is returned as is.
 ///
+/// [close] closes the inner client but not the manager: dispose the manager
+/// yourself when the session ends.
+///
 /// ```dart
 /// final client = HttpTokenClient<TokenSet>(manager: manager, inner: Client());
 /// final response = await client.get(Uri.parse('https://api.example.com/me'));
@@ -59,6 +62,10 @@ final class HttpTokenClient<T> extends BaseClient {
   /// otherwise.
   static const int _unauthorized = 401;
 
+  /// The message of the [ClientException] a request after [close] fails
+  /// with.
+  static const String _closedMessage = 'HttpTokenClient is closed.';
+
   static const RequestCopies _copies = RequestCopies();
 
   final TokenManager<T> _manager;
@@ -67,12 +74,17 @@ final class HttpTokenClient<T> extends BaseClient {
   final bool Function(BaseResponse response) _isAuthFailure;
   final bool Function(BaseRequest request) _shouldAuthorize;
 
+  bool _isClosed = false;
+
   /// Sends [request] with valid tokens, replaying a rejected [Request] once.
   ///
   /// Throws `NotAuthenticated`, `InvalidGrant` or `Transient` when the
-  /// manager has no tokens to send.
+  /// manager has no tokens to send, and a [ClientException] after [close].
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
+    if (_isClosed) {
+      throw ClientException(_closedMessage, request.url);
+    }
     if (!_shouldAuthorize(request)) {
       return _inner.send(request);
     }
@@ -80,6 +92,17 @@ final class HttpTokenClient<T> extends BaseClient {
       final Request replayable => _sendReplayable(replayable),
       null => _sendOnce(request),
     };
+  }
+
+  /// Closes the inner client once; the [TokenManager] stays open, because
+  /// this client does not own it.
+  @override
+  void close() {
+    if (_isClosed) {
+      return;
+    }
+    _isClosed = true;
+    _inner.close();
   }
 
   /// Sends [request] through [TokenManager.authorize], which replays it once
