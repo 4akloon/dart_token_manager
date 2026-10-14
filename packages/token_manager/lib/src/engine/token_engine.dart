@@ -7,6 +7,7 @@ import '../refresh_failure.dart';
 import '../token_info.dart';
 import '../token_refresher.dart';
 import '../token_store.dart';
+import 'refresh_policy.dart';
 import 'replay_value.dart';
 
 /// Loads, persists and refreshes the tokens of one session.
@@ -21,16 +22,12 @@ final class TokenEngine<T> {
     TokenRefresher<T>? refresher,
     TokenInfo<T>? info,
   }) : _store = store,
-       _skew = skew,
-       _clock = clock,
        _refresher = refresher,
-       _info = info;
+       _policy = RefreshPolicy<T>(skew: skew, clock: clock, info: info);
 
   final TokenStore<T> _store;
-  final Duration _skew;
-  final Clock _clock;
   final TokenRefresher<T>? _refresher;
-  final TokenInfo<T>? _info;
+  final RefreshPolicy<T> _policy;
   final ReplayValue<AuthState<T>> _states = ReplayValue<AuthState<T>>(
     Unauthenticated<T>(),
   );
@@ -63,7 +60,7 @@ final class TokenEngine<T> {
       throw const NotAuthenticated();
     }
     final refresher = _refresher;
-    if (refresher == null || !_needsRefresh(tokens, rejected)) {
+    if (refresher == null || !_policy.needsRefresh(tokens, rejected)) {
       return tokens;
     }
     final running = _flight;
@@ -158,18 +155,6 @@ final class TokenEngine<T> {
     if (stored != null && epoch == _epoch) {
       _emit(Authenticated<T>(stored));
     }
-  }
-
-  bool _needsRefresh(T tokens, T? rejected) {
-    return identical(tokens, rejected) || _isExpiring(tokens);
-  }
-
-  bool _isExpiring(T tokens) {
-    final expiresAt = _info?.expiresAt(tokens);
-    if (expiresAt == null) {
-      return false;
-    }
-    return !_clock.now().add(_skew).isBefore(expiresAt);
   }
 
   void _forgetWhenDone(Future<T> flight) {
