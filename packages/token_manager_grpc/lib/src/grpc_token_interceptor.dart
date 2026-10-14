@@ -16,9 +16,27 @@ import 'request_log.dart';
 /// through [TokenManager.authorizeStream]. A call fails with
 /// `NotAuthenticated` when there are no tokens. A streaming call is made
 /// again only before its first response, and only when its request stream
-/// ended after at most one request. A rejected call that is not made again
-/// reports its rejected tokens to the manager so a refresh can start for the
-/// next call.
+/// ended after at most one request, so a response is never delivered twice.
+/// A rejected call that is not made again reports its rejected tokens to the
+/// manager so a refresh can start for the next call.
+///
+/// The [RefreshInterceptorDelegate] decides how tokens travel and which
+/// [grpc.GrpcError] means they were rejected; the interceptor never refreshes
+/// by itself, the manager does.
+///
+/// ```dart
+/// final client = GreeterClient(
+///   channel,
+///   interceptors: [
+///     GrpcTokenInterceptor<TokenSet>(
+///       manager: manager,
+///       delegate: const BearerDelegate(),
+///     ),
+///   ],
+/// );
+/// ```
+///
+/// {@category getting-started}
 class GrpcTokenInterceptor<T> implements grpc.ClientInterceptor {
   /// Creates an interceptor that takes tokens from [manager] and attaches
   /// them with [delegate].

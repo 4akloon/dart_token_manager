@@ -1,12 +1,27 @@
 # token_manager_grpc
 
+![Dart](https://img.shields.io/badge/Dart-%3E%3D3.10-0175C2?logo=dart&logoColor=white)
 [![Pub Version](https://img.shields.io/pub/v/token_manager_grpc.svg)](https://pub.dev/packages/token_manager_grpc)
+![Part of](https://img.shields.io/badge/part_of-token__manager-informational)
 
-A gRPC client interceptor for [`token_manager`](https://pub.dev/packages/token_manager).
-It attaches valid tokens to every call, and when the server rejects them it
-refreshes them once (shared by all concurrent calls) and replays the call once.
+**gRPC client interceptor for [token_manager](../token_manager)** — attaches valid tokens to every
+call and, when the server rejects them, refreshes once and replays the call once.
 
-## Installation
+> Part of the dart_token_manager workspace. The core owns storage and refresh; this package only
+> adapts it to `package:grpc`.
+
+## Contents
+
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Unary and streaming calls](#unary-and-streaming-calls)
+- [The delegate](#the-delegate)
+- [Errors](#errors)
+- [Client-streaming and bidirectional calls](#client-streaming-and-bidirectional-calls)
+- [Migration from 0.1](#migration-from-01)
+- [Reference](#reference)
+
+## Install
 
 ```yaml
 dependencies:
@@ -14,13 +29,22 @@ dependencies:
   token_manager_grpc: ^0.2.0
 ```
 
-## Usage
+## Quick start
 
 ```dart
 import 'package:grpc/grpc.dart' as grpc;
 import 'package:token_manager/token_manager.dart';
 import 'package:token_manager_grpc/token_manager_grpc.dart';
 
+// Your refresher: exchange the refresh token for a new TokenSet.
+final class MyRefresher implements TokenRefresher<TokenSet> {
+  const MyRefresher();
+
+  @override
+  Future<TokenSet> refresh(TokenSet current) async => current;
+}
+
+// Tells the interceptor how to carry the tokens.
 final class BearerDelegate extends RefreshInterceptorDelegate<TokenSet> {
   const BearerDelegate();
 
@@ -32,52 +56,110 @@ final class BearerDelegate extends RefreshInterceptorDelegate<TokenSet> {
   );
 }
 
-final manager = TokenManager<TokenSet>.create(
-  store: InMemoryTokenStore<TokenSet>(), // or a persistent TokenStore
-  refresher: MyRefresher(), // implements TokenRefresher<TokenSet>
-  info: const TokenSetInfo(),
-);
-
-final client = GreeterClient( // your generated client
-  channel,
-  interceptors: [
-    GrpcTokenInterceptor<TokenSet>(
-      manager: manager,
-      delegate: const BearerDelegate(),
-    ),
-  ],
-);
+grpc.Client buildClient(grpc.ClientChannel channel) {
+  final manager = TokenManager<TokenSet>.create(
+    store: InMemoryTokenStore<TokenSet>(), // or a persistent TokenStore
+    refresher: const MyRefresher(),
+    info: const TokenSetInfo(),
+  );
+  // Pass the same list to your generated client:
+  // GreeterClient(channel, interceptors: [...]).
+  return grpc.Client(
+    channel,
+    interceptors: [
+      GrpcTokenInterceptor<TokenSet>(
+        manager: manager,
+        delegate: const BearerDelegate(),
+      ),
+    ],
+  );
+}
 ```
 
-Override `shouldRefresh` in the delegate when your server reports rejected
-tokens with another status than `UNAUTHENTICATED`.
+**[doc/getting_started.md](doc/getting_started.md)** walks through the same setup step by step.
 
-## How calls are replayed
+## Unary and streaming calls
 
-- Without tokens a call fails with `NotAuthenticated` and is not sent.
-- A unary call rejected by `shouldRefresh` is replayed once with refreshed
-  tokens. A second rejection, or any other error, reaches the caller.
-- A streaming call is reopened once only if it was rejected before its first
-  response and its request stream ended after at most one request (the shape
-  of a server-streaming call). After the first response an error is passed on;
-  listen to `manager.states` to resubscribe. A call whose request stream sent
-  more than one request, or had not ended when the call was rejected, is never
-  reopened, whatever its method type: the original error reaches the caller,
-  but the rejected tokens are reported to the manager, so that a refresh
-  starts for the next call.
-- For a streaming call `headers` resolves when the first response, error or
-  end arrives, or on cancel. If the response stream is never listened to or
-  cancelled it never resolves, so a bidirectional call must not await
-  `headers` before it listens to the responses.
-- If the refresh fails, the call fails with `InvalidGrant` (the session ended)
-  or `Transient` (try again later).
-- `headers`, `trailers` and `cancel()` follow the call that answered, which may
-  be the replay. Pause, resume and cancel reach the gRPC call.
+Unary calls go through `TokenManager.authorize`, streaming calls through
+`TokenManager.authorizeStream`. A call is replayed **at most once**, and concurrent rejections
+share one refresh.
 
-## Migrating from 0.1
+- **Unary** — rejected by `shouldRefresh`: refresh, then replay once. A second rejection or any
+  other error reaches the caller.
+- **Streaming** — reopened only *before the first response*, so an event is never delivered
+  twice. After the first response an error is passed on; resubscribe when `manager.states`
+  reports the new session.
+- **Pause, resume, cancel** — all reach the gRPC call in flight. `cancel()` during a refresh
+  prevents the replay.
+- **`headers` and `trailers`** — follow the attempt that answered, which may be the replay. For a
+  streaming call they resolve with the first response, error or end, or on cancel.
 
-The interceptor and delegate keep their names and constructors. Create the
-manager with `TokenManager.create`; `initialize()` is no longer needed. See
-`CHANGELOG.md` for the behaviour changes.
+A streaming call is made when its response stream is listened to; a stream nobody listens to sends
+nothing.
 
-For a runnable example, see `example/main.dart`.
+## The delegate
+
+`RefreshInterceptorDelegate` has two members:
+
+| Member | Role |
+|---|---|
+| `buildCallOptions(tokens)` | Returns the `CallOptions` (usually metadata) that carry the tokens; merged into the call's options. |
+| `shouldRefresh(error)` | Returns `true` when the `GrpcError` means the server rejected the tokens. Default: `UNAUTHENTICATED`. |
+
+Override `shouldRefresh` when your server uses another status, for example `PERMISSION_DENIED`:
+
+```dart
+import 'package:grpc/grpc.dart' as grpc;
+import 'package:token_manager/token_manager.dart';
+import 'package:token_manager_grpc/token_manager_grpc.dart';
+
+final class StrictDelegate extends RefreshInterceptorDelegate<TokenSet> {
+  const StrictDelegate();
+
+  @override
+  grpc.CallOptions buildCallOptions(TokenSet? tokens) => grpc.CallOptions(
+    metadata: {
+      if (tokens != null) 'authorization': 'Bearer ${tokens.accessToken}',
+    },
+  );
+
+  @override
+  bool shouldRefresh(grpc.GrpcError? error) =>
+      error?.code == grpc.StatusCode.unauthenticated ||
+      error?.code == grpc.StatusCode.permissionDenied;
+}
+```
+
+## Errors
+
+- **`NotAuthenticated`** — there are no tokens (logged out); the call is not sent.
+- **`InvalidGrant`** — the refresh was rejected for good; the session ended and the manager is
+  signed out.
+- **`Transient`** — the refresh failed for a reason worth retrying; the session is kept.
+- **The original `GrpcError`** — any other failure, or a rejection after the replay.
+
+Only `Exception`s are handled; an `Error` thrown by the delegate or an invoker propagates.
+
+## Client-streaming and bidirectional calls
+
+A call is reopened only when its request stream ended after at most one request, which is the
+shape of a server-streaming call. A call that sent more than one request, or whose request stream
+had not ended when the server rejected it, is **never reopened**, whatever its method type: the
+original error reaches the caller. The rejected tokens are still reported to the manager
+(`validToken(rejected: ...)`), so a refresh starts for the next call.
+
+A bidirectional call must listen to its responses before it awaits `headers`: `headers` resolves
+with the first response, error or end, so a response stream nobody listens to never resolves it.
+
+## Migration from 0.1
+
+`RefreshInterceptor` is now `GrpcTokenInterceptor` (the old name is a deprecated subclass), refresh
+failures reach the call, and signed-out calls fail instead of going out without credentials. See
+**[doc/migration.md](doc/migration.md)**.
+
+## Reference
+
+- [doc/getting_started.md](doc/getting_started.md) · [doc/migration.md](doc/migration.md) ·
+  [CHANGELOG.md](CHANGELOG.md) · [example/main.dart](example/main.dart)
+- Core package: [token_manager](../token_manager)
+- Generate API docs: `cd packages/token_manager_grpc && dart doc .`
