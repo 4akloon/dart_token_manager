@@ -1,0 +1,20 @@
+dartdoc:
+  categories:
+    getting-started:
+      markdown: doc/getting_started.md
+      displayName: Getting Started
+    auth-failures:
+      markdown: doc/auth_failures.md
+      displayName: Auth Failures
+    subscriptions:
+      markdown: doc/subscriptions.md
+      displayName: Subscriptions
+    clients:
+      markdown: doc/clients.md
+      displayName: Clients
+  categoryOrder:
+    - getting-started
+    - auth-failures
+    - subscriptions
+    - clients
+  showUndocumentedCategories: true
