@@ -23,6 +23,9 @@ final class FakeTokenStore<T> implements TokenStore<T> {
   /// When set, [write] throws it.
   Exception? writeError;
 
+  /// When set, [delete] throws it.
+  Exception? deleteError;
+
   /// The successful mutations in order: `write` or `delete`.
   final List<String> log = [];
 
@@ -50,6 +53,10 @@ final class FakeTokenStore<T> implements TokenStore<T> {
   @override
   Future<void> delete() async {
     deletes++;
+    final error = deleteError;
+    if (error != null) {
+      throw error;
+    }
     stored = null;
     log.add('delete');
   }

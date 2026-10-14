@@ -87,7 +87,7 @@ final class TokenEngine<T> {
     await _load();
     await _exclusive<void>(() async {
       await _store.write(tokens);
-      _epoch++;
+      _startNewSession();
       _emit(Authenticated<T>(tokens));
     });
   }
@@ -101,14 +101,22 @@ final class TokenEngine<T> {
   /// Stops emitting; work that finishes later is discarded.
   Future<void> dispose() async {
     _disposed = true;
-    _epoch++;
+    _startNewSession();
     await _states.close();
   }
 
   Future<void> _clear() async {
     await _store.delete();
-    _epoch++;
+    _startNewSession();
     _emit(Unauthenticated<T>());
+  }
+
+  /// Invalidates work started for the previous session, flight included.
+  ///
+  /// The old flight keeps running so that its own waiters still resolve.
+  void _startNewSession() {
+    _epoch++;
+    _flight = null;
   }
 
   void _emit(AuthState<T> next) {
@@ -162,25 +170,62 @@ final class TokenEngine<T> {
   Future<T> _refresh(TokenRefresher<T> refresher, T current) async {
     final epoch = _epoch;
     _emit(Refreshing<T>(current));
+    try {
+      return await _attempt(refresher, current, epoch);
+    } finally {
+      // An Error from the refresher is not caught, but must not leave the
+      // state stuck on Refreshing.
+      if (epoch == _epoch && state is Refreshing<T>) {
+        _emit(Authenticated<T>(current));
+      }
+    }
+  }
+
+  Future<T> _attempt(TokenRefresher<T> refresher, T current, int epoch) async {
     final T refreshed;
     try {
       refreshed = await refresher.refresh(current);
     } on InvalidGrant {
-      await _exclusive<void>(() async {
-        if (epoch == _epoch) {
-          await _clear();
-        }
-      });
-      rethrow;
-    } on RefreshFailure {
+      if (await _endSession(epoch)) {
+        throw const InvalidGrant();
+      }
+      return _supersededBy();
+    } on RefreshFailure catch (failure) {
       _restore(epoch, current);
-      rethrow;
+      return _supersededOrThrow(epoch, failure);
     } on Exception catch (error) {
       _restore(epoch, current);
-      throw Transient(error);
+      return _supersededOrThrow(epoch, Transient(error));
     }
     final committed = await _commit(epoch, current, refreshed);
     return committed ?? _supersededBy();
+  }
+
+  /// Throws [failure] unless the session changed since [epoch]; a superseded
+  /// refresh is discarded, failures included.
+  T _supersededOrThrow(int epoch, RefreshFailure failure) {
+    if (epoch != _epoch) {
+      return _supersededBy();
+    }
+    throw failure;
+  }
+
+  /// Ends the session after a dead grant; false when it was already replaced.
+  Future<bool> _endSession(int epoch) {
+    return _exclusive<bool>(() async {
+      if (epoch != _epoch) {
+        return false;
+      }
+      try {
+        await _store.delete();
+      } on Exception {
+        // The grant is dead, so the session ends even if the store could not
+        // be cleaned; waiters still get InvalidGrant.
+      }
+      _startNewSession();
+      _emit(Unauthenticated<T>());
+      return true;
+    });
   }
 
   /// Persists [refreshed] unless the session changed since [epoch].
