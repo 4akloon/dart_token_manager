@@ -3,7 +3,7 @@
 [![CI](https://github.com/4akloon/dart_token_manager/actions/workflows/ci.yml/badge.svg)](https://github.com/4akloon/dart_token_manager/actions/workflows/ci.yml)
 ![Dart](https://img.shields.io/badge/Dart-%3E%3D3.10-0175C2?logo=dart&logoColor=white)
 ![Transports](https://img.shields.io/badge/transports-dio%20%7C%20http%20%7C%20gRPC%20%7C%20GraphQL-informational)
-![Status](https://img.shields.io/badge/status-0.2.0%20pending-orange)
+[![pub package](https://img.shields.io/pub/v/token_manager.svg?label=token_manager)](https://pub.dev/packages/token_manager)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
 
 **Client-side token lifecycle for Dart — storage, single-flight refresh, an observable session
@@ -44,11 +44,6 @@ Future<void> main() async {
   await manager.dispose();
 }
 ```
-
-> **Status: 0.2.0 release pending.** `token_manager`, `token_manager_dio` and `token_manager_grpc`
-> 0.1.x are on pub.dev; 0.2.0 of these three and the first releases of `token_manager_gql` and
-> `token_manager_http` (0.1.0) are not published yet. Until then use a path or git dependency for
-> the new versions.
 
 ---
 
@@ -95,8 +90,6 @@ dependencies:
   token_manager: ^0.2.0
   token_manager_dio: ^0.2.0    # or token_manager_http: ^0.1.0 / token_manager_grpc: ^0.2.0 / token_manager_gql: ^0.1.0
 ```
-
-> These are the versions current after the pending 0.2.0 release; they do not resolve on pub.dev yet.
 
 ## Getting started
 

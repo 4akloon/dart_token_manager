@@ -5,10 +5,9 @@ publishing. There are no secrets. The workflow is
 `.github/workflows/publish.yml`; it runs when a tag `<package>-vX.Y.Z` is
 pushed. CI also runs `dart pub publish --dry-run` for every package.
 
-> **Status:** `token_manager`, `token_manager_dio` and `token_manager_grpc` 0.1.x
-> are on pub.dev; 0.2.0 of these three, `token_manager_gql` 0.1.0 and
-> `token_manager_http` 0.1.0 are the pending release. `token_manager_gql` and
-> `token_manager_http` do not exist on pub.dev yet.
+> **Status:** all five packages are on pub.dev. The next release is the
+> patch release `token_manager` 0.2.1, `token_manager_gql` 0.1.1 and
+> `token_manager_http` 0.1.1.
 
 ## One-time setup
 
