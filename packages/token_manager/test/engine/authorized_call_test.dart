@@ -9,6 +9,10 @@ final class _Unauthorized implements Exception {
   const _Unauthorized();
 }
 
+final class _Cancelled implements Exception {
+  const _Cancelled();
+}
+
 void main() {
   late EngineFixture fixture;
 
@@ -182,5 +186,30 @@ void main() {
     await settle();
     fixture.refresher.fail(const InvalidGrant());
     await result;
+  });
+
+  test('an exception that send throws on the replay fails the call', () async {
+    final engine = fixture.engine();
+    final old = fixture.tokens(const Duration(hours: 1));
+    await engine.setTokens(old);
+    var sends = 0;
+
+    final result = AuthorizedCall(engine).run<String>(
+      (used) {
+        sends++;
+        if (identical(used, old)) {
+          return Future<String>.error(const _Unauthorized());
+        }
+        throw const _Cancelled();
+      },
+      isAuthFailure: isUnauthorized,
+    );
+    await settle();
+    fixture.refresher.complete(
+      fixture.tokens(const Duration(hours: 1), access: 'b'),
+    );
+
+    await expectLater(result, throwsA(isA<_Cancelled>()));
+    expect(sends, 2);
   });
 }

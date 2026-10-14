@@ -249,4 +249,51 @@ void main() {
 
     expect(uncaught, isEmpty);
   });
+
+  test(
+    'an exception thrown by open becomes an error and ends the stream',
+    () async {
+      final errors = <Object>[];
+      var done = false;
+      final subscription = RelayStream<String, int>(
+        acquire: () async => 'a',
+        renew: (rejected) async => 'b',
+        open: (tokens) => throw Exception('refused'),
+        isAuthFailure: (error) => error is _Unauthorized,
+      ).stream.listen((_) {}, onError: errors.add, onDone: () => done = true);
+      await settle();
+
+      expect(errors.single, isA<Exception>());
+      expect(done, isTrue);
+      await subscription.cancel();
+    },
+  );
+
+  test('an exception thrown by open on the reopen becomes an error and ends '
+      'the stream', () async {
+    final errors = <Object>[];
+    var done = false;
+    final subscription = RelayStream<String, int>(
+      acquire: () async => 'a',
+      renew: (rejected) async => 'b',
+      open: (tokens) {
+        if (sources.isNotEmpty) {
+          throw Exception('refused');
+        }
+        final source = _Source(tokens);
+        sources.add(source);
+        return source.controller.stream;
+      },
+      isAuthFailure: (error) => error is _Unauthorized,
+    ).stream.listen((_) {}, onError: errors.add, onDone: () => done = true);
+    await settle();
+
+    sources.single.controller.addError(const _Unauthorized());
+    await settle();
+
+    expect(errors.single, isA<Exception>());
+    expect(done, isTrue);
+    expect(sources, hasLength(1));
+    await subscription.cancel();
+  });
 }

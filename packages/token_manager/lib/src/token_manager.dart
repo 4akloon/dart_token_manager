@@ -75,6 +75,10 @@ class TokenManager<T> {
   Future<void> logout() => _engine.logout();
 
   /// Runs [send] with valid tokens, replaying it once after an auth failure.
+  ///
+  /// [send] runs once per attempt, at most twice. An exception it throws,
+  /// synchronously or through its future, fails that attempt like a failed
+  /// call.
   Future<R> authorize<R>(
     Future<R> Function(T tokens) send, {
     required bool Function(Object error) isAuthFailure,
@@ -82,6 +86,10 @@ class TokenManager<T> {
 
   /// Opens a stream with valid tokens, reopening it once after an early auth
   /// failure. Pause, resume and cancel reach the source stream.
+  ///
+  /// Nothing is opened until the stream is listened to. [open] runs once per
+  /// attempt, at most twice, and never after the listener cancelled. An
+  /// exception that [open] throws becomes the stream's error and ends it.
   Stream<R> authorizeStream<R>(
     Stream<R> Function(T tokens) open, {
     required bool Function(Object error) isAuthFailure,
