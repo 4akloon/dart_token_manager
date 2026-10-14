@@ -72,11 +72,10 @@ in the default `statusCodes` ({401}), so `isAuthError` is false, the request
 is not replayed and the exception reaches the client. The `UNAUTHENTICATED`
 code is only read from a `Response`, which `HttpLink` does not emit for a 403.
 A 403 whose body is not GraphQL JSON (empty, HTML) arrives as an
-`HttpLinkParserException` instead, which has no status code: the default
-matcher does not recognise it either, so it is not replayed and reaches the
+`HttpLinkParserException` instead, which `statusCodes` does not cover: the
+default matcher does not recognise it, so it is not replayed and reaches the
 client too, whatever `statusCodes` holds. To replay a 403 with a GraphQL JSON
 body, add it to `statusCodes`:
-add it to `statusCodes`:
 
 ```dart
 import 'package:token_manager_gql/token_manager_gql.dart';
