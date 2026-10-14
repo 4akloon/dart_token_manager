@@ -35,6 +35,7 @@ import 'skip_authorization.dart';
 /// ```
 ///
 /// {@category getting-started}
+/// {@category clients}
 final class TokenManagerLink<T> extends Link {
   /// Creates a link that sends the [headers] built from the [manager]'s tokens
   /// and recognises rejections with [matcher].

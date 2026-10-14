@@ -12,6 +12,7 @@ import 'package:gql_exec/gql_exec.dart';
 /// ```
 ///
 /// {@category auth-failures}
+/// {@category clients}
 final class SkipAuthorization extends ContextEntry {
   /// Creates the marker.
   const SkipAuthorization();
