@@ -25,3 +25,7 @@ dependencies:
   token_manager_grpc: ^0.2.0
   token_manager_gql: ^0.1.0
 ```
+
+## Releasing
+
+The release process is described in [docs/releasing.md](docs/releasing.md).

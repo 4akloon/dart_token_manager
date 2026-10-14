@@ -36,3 +36,7 @@ fakes in `test/helpers/`, and never touch the network.
 Use Conventional Commits with a package scope, for example
 `feat(token_manager): add validToken`. Update the `CHANGELOG.md` of every
 package whose public behaviour changes.
+
+## Releasing
+
+See [docs/releasing.md](docs/releasing.md).

@@ -1,0 +1,78 @@
+# Publishes a package to pub.dev when a tag `<package>-vX.Y.Z` is pushed.
+#
+# Publishing order matters: release token_manager (the core) first. The
+# adapters depend on it with a `^0.2.0` constraint that resolves from pub.dev,
+# so the core version must already be published. See docs/releasing.md.
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'token_manager-v[0-9]+.[0-9]+.[0-9]+*'
+      - 'token_manager_dio-v[0-9]+.[0-9]+.[0-9]+*'
+      - 'token_manager_grpc-v[0-9]+.[0-9]+.[0-9]+*'
+      - 'token_manager_gql-v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify tag matches pubspec version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Compare tag and pubspec version
+        run: |
+          package="${GITHUB_REF_NAME%%-v*}"
+          tag_version="${GITHUB_REF_NAME#"$package"-v}"
+          pubspec_version="$(sed -n 's/^version: *//p' "packages/$package/pubspec.yaml" | tr -d '[:space:]')"
+          echo "package=$package tag=$tag_version pubspec=$pubspec_version"
+          if [ "$tag_version" != "$pubspec_version" ]; then
+            echo "::error::Tag version $tag_version != pubspec version $pubspec_version"
+            exit 1
+          fi
+
+  publish-token_manager:
+    name: Publish token_manager
+    if: startsWith(github.ref_name, 'token_manager-v')
+    needs: verify
+    permissions:
+      id-token: write
+    environment: pub.dev
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/token_manager
+
+  publish-token_manager_dio:
+    name: Publish token_manager_dio
+    if: startsWith(github.ref_name, 'token_manager_dio-v')
+    needs: verify
+    permissions:
+      id-token: write
+    environment: pub.dev
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/token_manager_dio
+
+  publish-token_manager_grpc:
+    name: Publish token_manager_grpc
+    if: startsWith(github.ref_name, 'token_manager_grpc-v')
+    needs: verify
+    permissions:
+      id-token: write
+    environment: pub.dev
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/token_manager_grpc
+
+  publish-token_manager_gql:
+    name: Publish token_manager_gql
+    if: startsWith(github.ref_name, 'token_manager_gql-v')
+    needs: verify
+    permissions:
+      id-token: write
+    environment: pub.dev
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/token_manager_gql

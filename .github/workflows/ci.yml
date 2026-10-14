@@ -49,3 +49,19 @@ jobs:
       - name: Test token_manager_gql
         working-directory: packages/token_manager_gql
         run: dart test
+      - name: Publish dry run token_manager
+        if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
+        working-directory: packages/token_manager
+        run: dart pub publish --dry-run
+      - name: Publish dry run token_manager_dio
+        if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
+        working-directory: packages/token_manager_dio
+        run: dart pub publish --dry-run
+      - name: Publish dry run token_manager_grpc
+        if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
+        working-directory: packages/token_manager_grpc
+        run: dart pub publish --dry-run
+      - name: Publish dry run token_manager_gql
+        if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
+        working-directory: packages/token_manager_gql
+        run: dart pub publish --dry-run
