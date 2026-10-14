@@ -77,15 +77,32 @@ void main() {
   });
 
   test('a read that finishes after an epoch change is dropped', () async {
-    store.readGate = Completer<void>();
+    final gate = Completer<void>();
+    store.readGate = gate;
     final loading = loader.load();
     await Future<void>.delayed(Duration.zero);
 
     epoch++;
-    store.readGate?.complete();
+    gate.complete();
     await loading;
 
     expect(loaded, isEmpty);
+  });
+
+  test('a failed read does not undo a markLoaded made meanwhile', () async {
+    final gate = Completer<void>();
+    store.readGate = gate;
+    store.readError = Exception('disk');
+    final first = loader.load();
+    final failure = expectLater(first, throwsException);
+    await Future<void>.delayed(Duration.zero);
+
+    loader.markLoaded();
+    gate.complete();
+    await failure;
+    await loader.load();
+
+    expect(store.reads, 1);
   });
 
   test('loadUnlessBroken swallows an exception from the store', () async {
