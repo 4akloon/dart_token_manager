@@ -1,0 +1,32 @@
+dartdoc:
+  categories:
+    getting-started:
+      markdown: doc/getting_started.md
+      displayName: Getting Started
+    concepts:
+      markdown: doc/concepts.md
+      displayName: Concepts & Session State
+    storage:
+      markdown: doc/storage.md
+      displayName: Storage
+    refreshing:
+      markdown: doc/refreshing.md
+      displayName: Refreshing & Failures
+    streams:
+      markdown: doc/streams.md
+      displayName: Streams
+    testing:
+      markdown: doc/testing.md
+      displayName: Testing
+    migration:
+      markdown: doc/migration.md
+      displayName: Migrating from 0.1
+  categoryOrder:
+    - getting-started
+    - concepts
+    - storage
+    - refreshing
+    - streams
+    - testing
+    - migration
+  showUndocumentedCategories: true

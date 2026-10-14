@@ -1,4 +1,16 @@
 /// A ready-made token value for apps that need no custom token type.
+///
+/// Pair it with [TokenSetInfo] so the manager knows when it expires.
+///
+/// ```dart
+/// final tokens = TokenSet(
+///   accessToken: 'access',
+///   refreshToken: 'refresh',
+///   expiresAt: DateTime.now().add(const Duration(hours: 1)),
+/// );
+/// ```
+///
+/// {@category getting-started}
 final class TokenSet {
   /// Creates a token set.
   const TokenSet({
