@@ -5,13 +5,15 @@
 ![Transport](https://img.shields.io/badge/transport-dio-0175C2)
 ![Part of](https://img.shields.io/badge/part_of-token__manager-informational)
 
-**The [Dio](https://pub.dev/packages/dio) adapter for [`token_manager`](../token_manager)** — one
-interceptor that attaches the access token, recognises an auth failure and replays the request once.
+**Dio refresh token interceptor: attach the bearer token, refresh once on 401 and retry the request** — the
+[Dio](https://pub.dev/packages/dio) adapter for [`token_manager`](https://pub.dev/packages/token_manager).
+One interceptor attaches the access token, recognises an auth failure and replays the request once.
 It depends only on the core and `dio`, and never refreshes by itself: the manager owns the refresh.
 
 ## Contents
 
 - [Install](#install)
+- [Should I use this?](#should-i-use-this)
 - [Quick start](#quick-start)
 - [How a request flows](#how-a-request-flows)
 - [The delegate](#the-delegate)
@@ -27,6 +29,23 @@ dependencies:
   token_manager: ^0.2.0
   token_manager_dio: ^0.2.0
 ```
+
+## Should I use this?
+
+- **Use it when:** the app has an access token and a refresh token, several requests can run at once, and a 401 must trigger exactly one refresh.
+- **You do not need it when:** the API uses a long-lived static key, or the app never refreshes tokens.
+- **What it replaces:** a hand-written Dio interceptor that refreshes in `onError`. That code tends to refresh once per failed request (N parallel 401s cause N refreshes) and to loop when the refresh itself fails. Here the manager keeps one refresh in flight, a request is replayed at most once, and a failed refresh reaches the caller as a typed error.
+- **Which package:**
+
+| You use | Package |
+|---|---|
+| Any Dart code, or a transport not listed here | [`token_manager`](https://pub.dev/packages/token_manager) |
+| `dio` | [`token_manager_dio`](https://pub.dev/packages/token_manager_dio) (this package) |
+| `package:http` | [`token_manager_http`](https://pub.dev/packages/token_manager_http) |
+| `grpc` | [`token_manager_grpc`](https://pub.dev/packages/token_manager_grpc) |
+| GraphQL (`gql_link`) | [`token_manager_gql`](https://pub.dev/packages/token_manager_gql) |
+
+Every adapter needs the core, so install `token_manager` too.
 
 ## Quick start
 
@@ -142,7 +161,7 @@ failure paths changed. 0.1 code still compiles, with deprecation warnings.
 
 - **[doc/getting_started.md](doc/getting_started.md)** — wiring a manager, a delegate and a `Dio`.
 - **[doc/migration.md](doc/migration.md)** — upgrading from 0.1.
-- [`token_manager`](../token_manager) — the core: storage, single-flight refresh, errors.
+- [`token_manager`](https://pub.dev/packages/token_manager) — the core: storage, single-flight refresh, errors.
 - [CHANGELOG](CHANGELOG.md)
 
 Generate API docs: `cd packages/token_manager_dio && dart doc .`

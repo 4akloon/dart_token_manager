@@ -5,14 +5,15 @@
 ![Transport](https://img.shields.io/badge/transport-gql__link-e10098?logo=graphql&logoColor=white)
 ![Part of](https://img.shields.io/badge/part_of-token__manager-informational)
 
-**The GraphQL adapter for [`token_manager`](https://pub.dev/packages/token_manager)** — a
-[`gql_link`](https://pub.dev/packages/gql_link) `Link` that attaches the manager's tokens to every request
-and replays a request once after the server rejects them. It works with every client built on `gql_link`
+**GraphQL auth token for Dart: a `gql_link` `Link` that adds the bearer token, refreshes once on a rejection
+and replays the request** — the GraphQL adapter for [`token_manager`](https://pub.dev/packages/token_manager),
+built on [`gql_link`](https://pub.dev/packages/gql_link). It works with every client built on `gql_link`
 (`graphql`, `graphql_flutter`, `ferry`) and depends only on `gql_link`, `gql_exec` and `token_manager`.
 
 ## Contents
 
 - [Install](#install)
+- [Should I use this?](#should-i-use-this)
 - [Quick start](#quick-start)
 - [Where the link goes](#where-the-link-goes)
 - [How a rejection is recognised](#how-a-rejection-is-recognised)
@@ -30,6 +31,23 @@ dependencies:
   token_manager: ^0.2.0
   token_manager_gql: ^0.1.0
 ```
+
+## Should I use this?
+
+- **Use it when:** the app has an access token and a refresh token, several requests can run at once, and a 401 must trigger exactly one refresh.
+- **You do not need it when:** the API uses a long-lived static key, or the app never refreshes tokens.
+- **What it replaces:** a hand-written GraphQL `Link` that adds the header and retries after an auth error. That code tends to refresh once per failed request (N parallel 401s cause N refreshes) and to loop when the refresh itself fails. Here the manager keeps one refresh in flight, a request is replayed at most once, and a failed refresh reaches the caller as a typed error.
+- **Which package:**
+
+| You use | Package |
+|---|---|
+| Any Dart code, or a transport not listed here | [`token_manager`](https://pub.dev/packages/token_manager) |
+| `dio` | [`token_manager_dio`](https://pub.dev/packages/token_manager_dio) |
+| `package:http` | [`token_manager_http`](https://pub.dev/packages/token_manager_http) |
+| `grpc` | [`token_manager_grpc`](https://pub.dev/packages/token_manager_grpc) |
+| GraphQL (`gql_link`) | [`token_manager_gql`](https://pub.dev/packages/token_manager_gql) (this package) |
+
+Every adapter needs the core, so install `token_manager` too.
 
 ## Quick start
 

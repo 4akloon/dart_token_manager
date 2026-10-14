@@ -5,10 +5,14 @@
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 ![Part of](https://img.shields.io/badge/part_of-dart__token__manager-informational)
 
-**The core of [dart_token_manager](../../README.md)** — storage, single-flight refresh and an observable
-session state for authentication tokens. Pure Dart, no runtime dependencies, and it knows nothing about
-HTTP: the transport adapters ([`token_manager_dio`](../token_manager_dio),
-[`token_manager_grpc`](../token_manager_grpc)) plug into it.
+**Dart refresh token and OAuth/JWT session management without races** — `token_manager` stores the access
+and refresh tokens, refreshes them once for any number of concurrent callers (single-flight) and exposes
+the session as a stream. It is the core of [dart_token_manager](https://github.com/4akloon/dart_token_manager).
+Pure Dart, no runtime dependencies, and it knows nothing about HTTP: the transport adapters
+([`token_manager_dio`](https://pub.dev/packages/token_manager_dio),
+[`token_manager_http`](https://pub.dev/packages/token_manager_http),
+[`token_manager_grpc`](https://pub.dev/packages/token_manager_grpc),
+[`token_manager_gql`](https://pub.dev/packages/token_manager_gql)) plug into it.
 
 > Refresh is on demand. There is no background timer: tokens are refreshed when `validToken`, `authorize`
 > or a rejected token asks for it.
@@ -16,6 +20,7 @@ HTTP: the transport adapters ([`token_manager_dio`](../token_manager_dio),
 ## Contents
 
 - [Install](#install)
+- [Should I use this?](#should-i-use-this)
 - [Quick start](#quick-start)
 - [Session state](#session-state)
 - [Authorizing calls](#authorizing-calls)
@@ -29,6 +34,23 @@ HTTP: the transport adapters ([`token_manager_dio`](../token_manager_dio),
 dependencies:
   token_manager: ^0.2.0
 ```
+
+## Should I use this?
+
+- **Use it when:** the app has an access token and a refresh token, several requests can run at once, and a 401 must trigger exactly one refresh.
+- **You do not need it when:** the API uses a long-lived static key, or the app never refreshes tokens.
+- **What it replaces:** a hand-written refresh scattered over repositories and interceptors. That code tends to refresh once per failed request (N parallel 401s cause N refreshes) and to loop when the refresh itself fails. Here the manager keeps one refresh in flight, a request is replayed at most once, and a failed refresh reaches the caller as a typed error.
+- **Which package:**
+
+| You use | Package |
+|---|---|
+| Any Dart code, or a transport not listed here | [`token_manager`](https://pub.dev/packages/token_manager) (this package) |
+| `dio` | [`token_manager_dio`](https://pub.dev/packages/token_manager_dio) |
+| `package:http` | [`token_manager_http`](https://pub.dev/packages/token_manager_http) |
+| `grpc` | [`token_manager_grpc`](https://pub.dev/packages/token_manager_grpc) |
+| GraphQL (`gql_link`) | [`token_manager_gql`](https://pub.dev/packages/token_manager_gql) |
+
+Every adapter needs the core, so install `token_manager` too.
 
 ## Quick start
 

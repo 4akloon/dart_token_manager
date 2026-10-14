@@ -5,16 +5,15 @@
 ![Transport](https://img.shields.io/badge/transport-package%3Ahttp-0175C2?logo=dart&logoColor=white)
 ![Part of](https://img.shields.io/badge/part_of-token__manager-informational)
 
-**The `package:http` adapter for
-[`token_manager`](https://pub.dev/packages/token_manager)**:
-`HttpTokenClient`, a `BaseClient` that wraps your `Client`, attaches the
-manager's tokens to every request that passes `shouldAuthorize` and replays a
-request once after the server rejects them. It depends only on `http` and
-`token_manager`.
+**An `http` client with bearer token authorization and refresh on 401** — the `package:http` adapter for
+[`token_manager`](https://pub.dev/packages/token_manager): `HttpTokenClient`, a `BaseClient` that wraps your
+`Client`, attaches the manager's tokens to every request that passes `shouldAuthorize`, refreshes once when
+the server rejects them and replays the request. It depends only on `http` and `token_manager`.
 
 ## Contents
 
 - [Install](#install)
+- [Should I use this?](#should-i-use-this)
 - [Quick start](#quick-start)
 - [What is replayed](#what-is-replayed)
 - [Requests without tokens](#requests-without-tokens)
@@ -33,6 +32,23 @@ dependencies:
   token_manager: ^0.2.0
   token_manager_http: ^0.1.0
 ```
+
+## Should I use this?
+
+- **Use it when:** the app has an access token and a refresh token, several requests can run at once, and a 401 must trigger exactly one refresh.
+- **You do not need it when:** the API uses a long-lived static key, or the app never refreshes tokens.
+- **What it replaces:** a hand-written `package:http` `Client` wrapper that adds the header and retries after a 401. That code tends to refresh once per failed request (N parallel 401s cause N refreshes) and to loop when the refresh itself fails. Here the manager keeps one refresh in flight, a request is replayed at most once, and a failed refresh reaches the caller as a typed error.
+- **Which package:**
+
+| You use | Package |
+|---|---|
+| Any Dart code, or a transport not listed here | [`token_manager`](https://pub.dev/packages/token_manager) |
+| `dio` | [`token_manager_dio`](https://pub.dev/packages/token_manager_dio) |
+| `package:http` | [`token_manager_http`](https://pub.dev/packages/token_manager_http) (this package) |
+| `grpc` | [`token_manager_grpc`](https://pub.dev/packages/token_manager_grpc) |
+| GraphQL (`gql_link`) | [`token_manager_gql`](https://pub.dev/packages/token_manager_gql) |
+
+Every adapter needs the core, so install `token_manager` too.
 
 ## Quick start
 

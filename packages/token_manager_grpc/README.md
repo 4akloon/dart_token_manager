@@ -4,8 +4,9 @@
 [![Pub Version](https://img.shields.io/pub/v/token_manager_grpc.svg)](https://pub.dev/packages/token_manager_grpc)
 ![Part of](https://img.shields.io/badge/part_of-token__manager-informational)
 
-**gRPC client interceptor for [token_manager](../token_manager)** — attaches valid tokens to every
-call and, when the server rejects them, refreshes once and replays the call once.
+**gRPC Dart auth token interceptor: attach the bearer token, refresh once on UNAUTHENTICATED and replay the call** — the
+`package:grpc` adapter for [token_manager](https://pub.dev/packages/token_manager). It attaches valid tokens
+to every call and, when the server rejects them, refreshes once and replays the call once.
 
 > Part of the dart_token_manager workspace. The core owns storage and refresh; this package only
 > adapts it to `package:grpc`.
@@ -13,6 +14,7 @@ call and, when the server rejects them, refreshes once and replays the call once
 ## Contents
 
 - [Install](#install)
+- [Should I use this?](#should-i-use-this)
 - [Quick start](#quick-start)
 - [Unary and streaming calls](#unary-and-streaming-calls)
 - [The delegate](#the-delegate)
@@ -28,6 +30,23 @@ dependencies:
   token_manager: ^0.2.0
   token_manager_grpc: ^0.2.0
 ```
+
+## Should I use this?
+
+- **Use it when:** the app has an access token and a refresh token, several requests can run at once, and a 401 must trigger exactly one refresh.
+- **You do not need it when:** the API uses a long-lived static key, or the app never refreshes tokens.
+- **What it replaces:** a hand-written gRPC `ClientInterceptor` that refreshes when a call fails. That code tends to refresh once per failed request (N parallel 401s cause N refreshes) and to loop when the refresh itself fails. Here the manager keeps one refresh in flight, a request is replayed at most once, and a failed refresh reaches the caller as a typed error.
+- **Which package:**
+
+| You use | Package |
+|---|---|
+| Any Dart code, or a transport not listed here | [`token_manager`](https://pub.dev/packages/token_manager) |
+| `dio` | [`token_manager_dio`](https://pub.dev/packages/token_manager_dio) |
+| `package:http` | [`token_manager_http`](https://pub.dev/packages/token_manager_http) |
+| `grpc` | [`token_manager_grpc`](https://pub.dev/packages/token_manager_grpc) (this package) |
+| GraphQL (`gql_link`) | [`token_manager_gql`](https://pub.dev/packages/token_manager_gql) |
+
+Every adapter needs the core, so install `token_manager` too.
 
 ## Quick start
 
@@ -161,5 +180,5 @@ failures reach the call, and signed-out calls fail instead of going out without 
 
 - [doc/getting_started.md](doc/getting_started.md) · [doc/migration.md](doc/migration.md) ·
   [CHANGELOG.md](CHANGELOG.md) · [example/main.dart](example/main.dart)
-- Core package: [token_manager](../token_manager)
+- Core package: [token_manager](https://pub.dev/packages/token_manager)
 - Generate API docs: `cd packages/token_manager_grpc && dart doc .`
