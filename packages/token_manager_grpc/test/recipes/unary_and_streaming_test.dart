@@ -168,8 +168,31 @@ void main() {
     expect(received, ['a']);
     expect(errors, [unauthenticated]);
     expect(invoker.calls, hasLength(1));
+    expect(exchange.calls, 0);
     await subscription.cancel();
   });
+
+  test(
+    'a streaming call whose request stream is open is not reopened',
+    () async {
+      final invoker = FakeStreamInvoker<String, String>();
+      addTearDown(invoker.closeAll);
+      final requests = StreamController<String>()..add('one');
+      addTearDown(requests.close);
+      final errors = <Object>[];
+      final subscription = calls
+          .streaming(invoker, requests.stream)
+          .listen((_) {}, onError: errors.add);
+      await GrpcFixture.settle();
+
+      invoker.calls[0].responses.addError(unauthenticated);
+      await GrpcFixture.settle();
+
+      expect(errors, [unauthenticated]);
+      expect(invoker.calls, hasLength(1));
+      await subscription.cancel();
+    },
+  );
 
   test('a streaming call that sent two requests is not reopened', () async {
     final invoker = FakeStreamInvoker<String, String>();

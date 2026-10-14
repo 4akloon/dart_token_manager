@@ -159,8 +159,9 @@ the fake calls of the package's own tests.
 - A streaming call is reopened once, only before its first response and only
   when its request stream ended after at most one request, so a response is
   never delivered twice.
-- A call that is not reopened still reports its rejected tokens, so the next
-  call gets new ones after one refresh.
+- A streaming call that sent more than one request, or whose request stream
+  had not ended, is not reopened but still reports its rejected tokens, so the
+  next call gets new ones after one refresh.
 - A dead refresh token fails the call with `InvalidGrant` and signs the session
   out.
 - A transient failure of the exchange, such as `UNAVAILABLE`, fails the call
@@ -173,9 +174,10 @@ the fake calls of the package's own tests.
   the original call never completes. Use a client of the auth service without
   the interceptor.
 - **Expecting a long client-streaming call to be replayed.** A call that sent
-  more than one request, or already got a response, is not reopened; the error
-  reaches the caller and the rejected tokens are reported so the next call
-  gets new ones.
+  more than one request, or whose request stream had not ended, is not
+  reopened; the error reaches the caller and the rejected tokens are reported
+  so the next call gets new ones. A call that already got a response is not
+  reopened either, and its error reaches the caller without a report.
 - **Mapping every error to `InvalidGrant`.** Only `UNAUTHENTICATED` from the auth
   service means the refresh token is dead; `UNAVAILABLE` is transient.
 - **Relying on `PERMISSION_DENIED` to refresh.** The default `shouldRefresh`
