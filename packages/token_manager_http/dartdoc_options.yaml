@@ -1,0 +1,16 @@
+dartdoc:
+  categories:
+    getting-started:
+      markdown: doc/getting_started.md
+      displayName: Getting Started
+    replay:
+      markdown: doc/replay.md
+      displayName: Replay
+    testing:
+      markdown: doc/testing.md
+      displayName: Testing
+  categoryOrder:
+    - getting-started
+    - replay
+    - testing
+  showUndocumentedCategories: true
