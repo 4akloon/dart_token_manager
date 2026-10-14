@@ -1,83 +1,63 @@
-## token_manager
+# token_manager
 
 [![Pub Version](https://img.shields.io/pub/v/token_manager.svg)](https://pub.dev/packages/token_manager)
 
-`token_manager` is a lightweight core library for token storage, proactive refresh,
-and synchronized token state access across your app.
-
-## Features
-
-- Storage abstraction via `TokenStorage<T>`.
-- Auto-refresh scheduling via `TokenManagerRefreshDelegate<T>`.
-- Refresh synchronization (`waitForFresh`) to avoid concurrent refresh storms.
-- Reactive token updates via `tokensStream`.
-- Built-in revoke flow via `RevokedTokensException`.
+Token lifecycle management for Dart: storage, single-flight refresh and an
+observable session state. The core has no dependencies and knows nothing about
+HTTP; transport packages (`token_manager_dio`, `token_manager_grpc`) plug into
+it.
 
 ## Installation
 
 ```yaml
 dependencies:
-  token_manager: ^0.1.0
+  token_manager: ^0.2.0
 ```
 
-## Usage
+## Quick start
 
 ```dart
 import 'package:token_manager/token_manager.dart';
 
-final class AppTokens {
-  const AppTokens({
-    required this.accessToken,
-    required this.expiresAt,
-  });
+final manager = TokenManager<TokenSet>.create(
+  store: InMemoryTokenStore<TokenSet>(), // or a persistent TokenStore
+  refresher: MyRefresher(), // implements TokenRefresher<TokenSet>
+  info: const TokenSetInfo(),
+);
 
-  final String accessToken;
-  final DateTime expiresAt;
-}
+await manager.setTokens(
+  TokenSet(
+    accessToken: 'access',
+    refreshToken: 'refresh',
+    expiresAt: DateTime.now().add(const Duration(hours: 1)),
+  ),
+);
 
-final class MemoryTokenStorage implements TokenStorage<AppTokens> {
-  AppTokens? _tokens;
-
-  @override
-  AppTokens? getTokens() => _tokens;
-
-  @override
-  Future<void> setTokens(AppTokens? tokens) async {
-    _tokens = tokens;
-  }
-}
-
-final class AppRefreshDelegate extends TokenManagerRefreshDelegate<AppTokens> {
-  @override
-  Future<AppTokens> refresh(AppTokens tokens) async {
-    // Replace with real refresh call.
-    return AppTokens(
-      accessToken: '${tokens.accessToken}_refreshed',
-      expiresAt: DateTime.now().add(const Duration(hours: 1)),
-    );
-  }
-}
-
-final class AppTokenInfoDelegate implements TokenInfoDelegate<AppTokens> {
-  @override
-  DateTime expiresAt(AppTokens tokens) => tokens.expiresAt;
-}
-
-Future<void> main() async {
-  final manager = TokenManager<AppTokens>(
-    storage: MemoryTokenStorage(),
-    refreshDelegate: AppRefreshDelegate(),
-    infoDelegate: AppTokenInfoDelegate(),
-  );
-
-  await manager.initialize();
-  await manager.setTokens(
-    AppTokens(
-      accessToken: 'access_123',
-      expiresAt: DateTime.now().add(const Duration(minutes: 30)),
-    ),
-  );
-}
+final tokens = await manager.validToken(); // refreshes when about to expire
 ```
 
-For a complete runnable example, see `example/main.dart`.
+`TokenSet` is a ready-made token value; use your own type `T` by implementing
+`TokenStore<T>`, `TokenRefresher<T>` and `TokenInfo<T>`.
+
+## Concepts
+
+- **`validToken({rejected})`** returns tokens that are valid now. Concurrent
+  callers share one refresh. Pass the tokens a server just rejected as
+  `rejected`: they are refreshed unless another caller already replaced them.
+  It throws `NotAuthenticated` when there is no session.
+- **Typed failures.** A `TokenRefresher` throws `InvalidGrant` when the refresh
+  token was rejected for good (the session ends and `states` emits
+  `Unauthenticated`) or `Transient` when the failure may go away (the session
+  stays). Any other exception is treated as transient.
+- **`states`** is a stream that replays the latest `AuthState` to each
+  listener: `Unauthenticated`, `Authenticated` or `Refreshing`.
+- **`authorize`** runs a call with valid tokens and replays it once after an
+  auth failure. **`authorizeStream`** does the same for streams without
+  `await for`, so pause, resume and cancel reach the source.
+- **`TokenManagerRegistry`** keeps one manager per provider id.
+- Refresh happens on demand, when `validToken`, `authorize` or a rejected token
+  asks for it; there is no background timer.
+
+## Migrating from 0.1
+
+See [doc/migration.md](doc/migration.md).
