@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.1
+
+Documentation fixes; no code change.
+
+- Docs: state the 403 and `UNAUTHENTICATED` behaviour and how to opt in to
+  other rejections with `AuthFailureMatcher`.
+- Docs: state which exceptions reach the caller; they are not wrapped in
+  `LinkException`.
+- Docs: the `clients` dartdoc category now lists `TokenManagerLink` and
+  `SkipAuthorization`.
+
 ## 0.1.0
 
 Initial release of the GraphQL adapter for token_manager.

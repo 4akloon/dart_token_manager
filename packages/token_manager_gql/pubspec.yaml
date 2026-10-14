@@ -1,6 +1,6 @@
 name: token_manager_gql
 description: A gql_link Link that attaches token_manager tokens to GraphQL requests and replays once after an auth failure.
-version: 0.1.0
+version: 0.1.1
 repository: https://github.com/4akloon/dart_token_manager
 homepage: https://github.com/4akloon/dart_token_manager
 issue_tracker: https://github.com/4akloon/dart_token_manager/issues
