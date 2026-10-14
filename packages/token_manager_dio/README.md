@@ -20,6 +20,7 @@ It depends only on the core and `dio`, and never refreshes by itself: the manage
 - [Errors](#errors)
 - [Limitations](#limitations)
 - [Migration from 0.1](#migration-from-01)
+- [Recipes](#recipes)
 - [Reference](#reference)
 
 ## Install
@@ -156,6 +157,13 @@ you as the usual `DioException` of that second response.
 `RefreshInterceptor` is now `DioTokenInterceptor`, `applyTokensToRequest` is now `applyTo`, and a few
 failure paths changed. 0.1 code still compiles, with deprecation warnings.
 **[doc/migration.md](doc/migration.md)** lists every change.
+
+## Recipes
+
+Each recipe is one page with complete code that is compiled and tested in this repository.
+
+- [Replace a hand-written refresh interceptor](doc/recipes/replace_refresh_interceptor.md)
+- [Skip auth for the login and refresh endpoints](doc/recipes/skip_auth_endpoints.md)
 
 ## Reference
 
