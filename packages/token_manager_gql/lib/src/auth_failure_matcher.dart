@@ -28,8 +28,6 @@ import 'package:gql_link/gql_link.dart';
 ///
 /// {@category auth-failures}
 class AuthFailureMatcher {
-  static const int _forbidden = 403;
-
   /// Creates a matcher for the HTTP [statusCodes] of a [ServerException] and
   /// the [errorCodes] in `errors[].extensions.code` of a [Response].
   ///
@@ -47,6 +45,8 @@ class AuthFailureMatcher {
 
   /// The `extensions.code` values that mean the tokens were rejected.
   final Set<String> errorCodes;
+
+  static const int _forbidden = 403;
 
   /// Whether the error event [error] means the tokens were rejected.
   ///
