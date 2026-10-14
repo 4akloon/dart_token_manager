@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-test:
+    name: Test (${{ matrix.os }}, ${{ matrix.sdk }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        sdk: ['3.10.0', stable]
+        include:
+          - os: macos-latest
+            sdk: stable
+          - os: windows-latest
+            sdk: stable
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+      - name: Install dependencies
+        run: dart pub get
+      - name: Check formatting
+        if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
+        run: dart format --output=none --set-exit-if-changed packages
+      - name: Analyze
+        if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
+        run: dart analyze packages
+      - name: Test token_manager
+        working-directory: packages/token_manager
+        run: dart test

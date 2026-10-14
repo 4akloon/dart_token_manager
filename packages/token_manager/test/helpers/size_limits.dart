@@ -3,8 +3,8 @@ import 'dart:io';
 /// Measures the size limits of `CLAUDE.md` ("Code quality rules") on one
 /// package and turns a measurement into failure messages.
 ///
-/// The measurement needs no analyzer: the generator core must not depend on
-/// it, and neither does this test. Files are counted with the newline count
+/// The measurement needs no analyzer: the package has no dependencies besides
+/// the Dart SDK, and neither does this test. Files are counted with the newline count
 /// that `wc -l` gives. Methods are found by indentation, see [measureMethods].
 ///
 /// Both limits are a ratchet: a unit over its limit that is in the allowlist
@@ -178,8 +178,8 @@ final class SizeLimits {
     return failures;
   }
 
-  /// Every `.dart` file of `lib/` and `test/` outside the vendored parser,
-  /// by path relative to [packageRoot], in path order.
+  /// Every `.dart` file of `lib/` and `test/`, by path relative to
+  /// [packageRoot], in path order.
   Map<String, File> _dartFiles() {
     final files = <String, File>{};
     for (final folder in const ['lib', 'test']) {
