@@ -2,5 +2,10 @@
 
 ### Added
 
+- `TokenManagerLink<T>`, a `gql_link` `Link` that attaches the tokens of a
+  `TokenManager<T>` and replays a request once after the server rejects them
+  on an error event.
 - `AuthFailureMatcher`, which recognises a rejection: HTTP 401 and the
   `UNAUTHENTICATED` error code by default.
+- `SkipAuthorization`, a request context entry for operations sent without
+  tokens, such as a login.

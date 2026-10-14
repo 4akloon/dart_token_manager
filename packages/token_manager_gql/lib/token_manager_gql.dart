@@ -3,3 +3,5 @@
 library;
 
 export 'src/auth_failure_matcher.dart' show AuthFailureMatcher;
+export 'src/skip_authorization.dart' show SkipAuthorization;
+export 'src/token_manager_link.dart' show TokenManagerLink;
