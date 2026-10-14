@@ -28,10 +28,10 @@ not copy it.
   the next request gets new ones. Resend the request yourself if that is
   safe.
 
-The buffered 401 body is held in memory without a size cap. The returned
-response copies the headers of the rejected one unchanged, including its
-original `content-length` and `content-encoding`, and its `contentLength` is
-the length of the buffered body.
+In the replayable case, the buffered 401 body is held in memory without a
+size cap. The returned response copies the headers of the rejected one
+unchanged, including its original `content-length` and `content-encoding`, and
+its `contentLength` is the length of the buffered body.
 
 If the body of a rejected response fails to arrive, the call fails with that
 `ClientException` and nothing is replayed.

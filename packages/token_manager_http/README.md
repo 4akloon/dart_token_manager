@@ -6,8 +6,8 @@
 ![Part of](https://img.shields.io/badge/part_of-token__manager-informational)
 
 **The `package:http` adapter for [`token_manager`](https://pub.dev/packages/token_manager)**: `HttpTokenClient`,
-a `BaseClient` that wraps your `Client`, attaches the manager's tokens to every request and replays a request
-once after the server rejects them. It depends only on `http` and `token_manager`.
+a `BaseClient` that wraps your `Client`, attaches the manager's tokens to every request that passes `shouldAuthorize` and
+replays a request once after the server rejects them. It depends only on `http` and `token_manager`.
 
 ## Contents
 
@@ -57,6 +57,8 @@ without a network is in [example/main.dart](example/main.dart).
 **[doc/getting_started.md](doc/getting_started.md)**
 
 ## What is replayed
+
+Every row passes `shouldAuthorize`; a request that fails it is sent unchanged, without tokens, and never replayed.
 
 | Request | Replayed after a rejection |
 |---|---|

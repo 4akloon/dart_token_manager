@@ -2,7 +2,8 @@
 
 `token_manager_http` provides `HttpTokenClient`, a `package:http`
 `BaseClient` that attaches the tokens of a `TokenManager` to every request
-and replays a request once after the server rejects them.
+that passes `shouldAuthorize` and replays a request once after the server
+rejects them.
 
 ## Build the client
 
@@ -34,9 +35,8 @@ Without `headers`, a token type other than `TokenSet` throws an
 ## What the client does
 
 For every request that passes `shouldAuthorize` (all of them by default) the
-client asks the manager for valid tokens. The manager
-refreshes them first when they are about to expire, and concurrent requests
-share one refresh. A copy of the request is sent with the header, so your
+client asks the manager for valid tokens. The manager refreshes them first
+when they are about to expire, and concurrent requests share one refresh. A copy of the request is sent with the header, so your
 request object never changes. A request that fails `shouldAuthorize` is sent
 unchanged without tokens and is never replayed.
 
