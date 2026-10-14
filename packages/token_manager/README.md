@@ -56,7 +56,6 @@ A runnable version is in [example/main.dart](example/main.dart).
 - **`authorize`** runs a call with valid tokens and replays it once after an
   auth failure. **`authorizeStream`** does the same for streams without
   `await for`, so pause, resume and cancel reach the source.
-- **`TokenManagerRegistry`** keeps one manager per provider id.
 - Refresh happens on demand, when `validToken`, `authorize` or a rejected token
   asks for it; there is no background timer.
 

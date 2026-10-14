@@ -5,7 +5,7 @@
   `authorize` and `authorizeStream`.
 - `TokenStore<T>`, `TokenRefresher<T>`, `TokenInfo<T>`, `AuthState<T>`,
   `RefreshFailure` (`InvalidGrant`, `Transient`), `NotAuthenticated`, `Clock`,
-  `InMemoryTokenStore<T>`, `TokenSet`, `TokenSetInfo` and `TokenManagerRegistry`.
+  `InMemoryTokenStore<T>`, `TokenSet` and `TokenSetInfo`.
 
 ### Changed
 - `setTokens(null)` is `logout()` and also discards an in-flight refresh.

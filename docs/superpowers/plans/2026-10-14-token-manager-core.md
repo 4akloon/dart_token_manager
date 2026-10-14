@@ -56,7 +56,6 @@ Created in `packages/token_manager/`:
 | `lib/src/legacy/storage_token_store.dart` | adapts old `TokenStorage<T>` to `TokenStore<T>` |
 | `lib/src/legacy/delegate_token_refresher.dart` | adapts old refresh delegate to `TokenRefresher<T>` |
 | `lib/src/revoked_tokens_exception.dart` | `RevokedTokensException` (moved out of `token_manager.dart`) |
-| `lib/src/token_manager_registry.dart` | provider id to `TokenManager<T>` |
 
 Modified: `lib/token_manager.dart`, `lib/src/token_manager.dart` (rewritten), `lib/src/token_storage.dart`, `lib/src/token_manager_refresh_delegate.dart`, `lib/src/token_info_delegate.dart`, `pubspec.yaml`, `example/main.dart`, `README.md`, `CHANGELOG.md`. Deleted: the old internal `lib/src/token_store.dart` content (renamed in Task 6, removed in Task 11).
 
@@ -3492,179 +3491,10 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 12: TokenManagerRegistry
+### Task 12: removed
 
-**Files (relative to `packages/token_manager/`):**
-- Create: `lib/src/token_manager_registry.dart`, `test/token_manager_registry_test.dart`
-- Modify: `lib/token_manager.dart`
-
-**Interfaces:**
-- Consumes: `TokenManager<T>`, `TokenManager.create`, `InMemoryTokenStore<T>` (Task 11).
-- Produces:
-
-```dart
-final class TokenManagerRegistry {
-  TokenManagerRegistry();
-  Iterable<String> get ids;
-  void register<T>(String id, TokenManager<T> manager); // StateError on a duplicate id
-  TokenManager<T> get<T>(String id);                      // StateError when missing or of another token type
-  Future<void> dispose();                                 // disposes every manager and clears the registry
-}
-```
-
-- [ ] **Step 1: Write the failing tests**
-
-`test/token_manager_registry_test.dart`:
-
-```dart
-import 'package:test/test.dart';
-import 'package:token_manager/token_manager.dart';
-
-void main() {
-  late TokenManagerRegistry registry;
-
-  TokenManager<String> stringManager() =>
-      TokenManager<String>.create(store: InMemoryTokenStore<String>());
-
-  setUp(() => registry = TokenManagerRegistry());
-
-  test('returns the manager registered under an id', () {
-    final manager = stringManager();
-
-    registry.register<String>('main', manager);
-
-    expect(registry.get<String>('main'), same(manager));
-    expect(registry.ids, ['main']);
-  });
-
-  test('keeps providers with different token types apart', () {
-    final strings = stringManager();
-    final sets = TokenManager<TokenSet>.create(
-      store: InMemoryTokenStore<TokenSet>(),
-    );
-
-    registry
-      ..register<String>('legacy', strings)
-      ..register<TokenSet>('modern', sets);
-
-    expect(registry.get<String>('legacy'), same(strings));
-    expect(registry.get<TokenSet>('modern'), same(sets));
-  });
-
-  test('rejects a second manager for the same id', () {
-    registry.register<String>('main', stringManager());
-
-    expect(
-      () => registry.register<String>('main', stringManager()),
-      throwsStateError,
-    );
-  });
-
-  test('rejects an unknown id', () {
-    expect(() => registry.get<String>('missing'), throwsStateError);
-  });
-
-  test('rejects a request for the wrong token type', () {
-    registry.register<String>('main', stringManager());
-
-    expect(() => registry.get<TokenSet>('main'), throwsStateError);
-  });
-
-  test('dispose disposes every manager and empties the registry', () async {
-    final manager = stringManager();
-    registry.register<String>('main', manager);
-
-    await registry.dispose();
-
-    await expectLater(
-      manager.states,
-      emitsInOrder([isA<Unauthenticated<String>>(), emitsDone]),
-    );
-    expect(registry.ids, isEmpty);
-  });
-}
-```
-
-- [ ] **Step 2: Run to see it fail**
-
-Run: `cd packages/token_manager && dart test test/token_manager_registry_test.dart`
-Expected: FAIL (`TokenManagerRegistry` is not defined).
-
-- [ ] **Step 3: Implement**
-
-`lib/src/token_manager_registry.dart`:
-
-```dart
-import 'token_manager.dart';
-
-/// Holds one [TokenManager] per provider id, each with its own token type.
-final class TokenManagerRegistry {
-  /// Creates an empty registry.
-  TokenManagerRegistry();
-
-  final Map<String, TokenManager<Object?>> _managers = {};
-
-  /// The ids of the registered managers.
-  Iterable<String> get ids => _managers.keys;
-
-  /// Registers [manager] under [id].
-  ///
-  /// Throws a [StateError] when [id] is already taken.
-  void register<T>(String id, TokenManager<T> manager) {
-    if (_managers.containsKey(id)) {
-      throw StateError('A token manager is already registered for "$id".');
-    }
-    _managers[id] = manager;
-  }
-
-  /// Returns the manager registered under [id].
-  ///
-  /// Throws a [StateError] when there is none, or when it handles another
-  /// token type than [T].
-  TokenManager<T> get<T>(String id) {
-    final manager = _managers[id];
-    if (manager == null) {
-      throw StateError('No token manager is registered for "$id".');
-    }
-    if (manager is! TokenManager<T>) {
-      throw StateError(
-        'The token manager for "$id" has a different token type than $T.',
-      );
-    }
-    return manager;
-  }
-
-  /// Disposes every manager and empties the registry.
-  Future<void> dispose() async {
-    for (final manager in _managers.values) {
-      await manager.dispose();
-    }
-    _managers.clear();
-  }
-}
-```
-
-- [ ] **Step 4: Export it**
-
-Add to `lib/token_manager.dart` (sorted, after `token_manager_refresh_delegate.dart`):
-
-```dart
-export 'src/token_manager_registry.dart' show TokenManagerRegistry;
-```
-
-- [ ] **Step 5: Run tests and the gate**
-
-Run: `dart test && cd ../.. && dart format packages && dart analyze packages && dart format --output=none --set-exit-if-changed packages`
-Expected: all pass; `No issues found!`; exit 0.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add -A
-git commit -m "feat(token_manager): add TokenManagerRegistry for several providers
-
-Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
-```
+The `TokenManagerRegistry` was dropped as unnecessary; the number is kept so
+the other task references stay valid.
 
 ---
 
@@ -3724,7 +3554,6 @@ final tokens = await manager.validToken(); // refreshes when about to expire
 - **`authorize`** runs a call with valid tokens and replays it once after an
   auth failure. **`authorizeStream`** does the same for streams without
   `await for`, so pause, resume and cancel reach the source.
-- **`TokenManagerRegistry`** keeps one manager per provider id.
 
 ## Migrating from 0.1
 
@@ -3743,7 +3572,7 @@ Insert at the top of `CHANGELOG.md`, above `## 0.1.0 - 2026-03-27`:
   `authorize` and `authorizeStream`.
 - `TokenStore<T>`, `TokenRefresher<T>`, `TokenInfo<T>`, `AuthState<T>`,
   `RefreshFailure` (`InvalidGrant`, `Transient`), `NotAuthenticated`, `Clock`,
-  `InMemoryTokenStore<T>`, `TokenSet`, `TokenSetInfo` and `TokenManagerRegistry`.
+  `InMemoryTokenStore<T>`, `TokenSet` and `TokenSetInfo`.
 
 ### Changed
 - `setTokens(null)` is now the same as `logout()`.
@@ -3860,7 +3689,6 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 | `authorize` with one replay | 9 |
 | `RelayStream` (no `await for`, pause/resume/cancel) | 10 |
 | Public `TokenManager`, `authorizeStream`, deprecated facade, `rxdart` removed, typedefs, adapters | 11 |
-| `TokenManagerRegistry` | 12 |
 | `doc/migration.md`, `CHANGELOG`, README | 13 |
 
 Not in this plan, by design: `publish.yml` and `publish-dry-run` (phase 5), adapters (plan 2), storage packages (plan 3), `ProactiveRefresher` (phase 6).

@@ -158,9 +158,8 @@ entry point. All logic lives in an internal `TokenEngine<T>` that
 `TokenManager` delegates to.
 
 Also in the core: `TokenSet` (optional ready-made token type for the simple
-case), `InMemoryTokenStore`, `Clock`, `RelayStream<R>` and
-`TokenManagerRegistry` (provider id to `TokenManager<T>`; each provider has its
-own `T`).
+case), `InMemoryTokenStore`, `Clock`, and `RelayStream<R>`. Several providers are
+several `TokenManager<T>` instances held by the application.
 
 `validToken({rejected})`:
 
@@ -294,7 +293,7 @@ and `dart test` runs.
 
 **Phase 1. Core (`token_manager`).** `TokenStore`, `TokenRefresher`, `TokenInfo`,
 `AuthState`, `RefreshFailure`, `Clock`, `TokenManager`, `authorize`,
-`RelayStream`, `TokenManagerRegistry`, `InMemoryTokenStore`, `TokenSet`.
+`RelayStream`, `InMemoryTokenStore`, `TokenSet`.
 Regression tests: deadlock with a short-lived token, lost update, concurrent
 `setTokens`/`logout`, `dispose` during a refresh, cancellation of one waiter.
 Done when every core bug is reproduced by a test and fixed, and the core has no
