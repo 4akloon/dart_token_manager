@@ -2,6 +2,24 @@ import 'package:grpc/grpc.dart' as grpc;
 
 /// Attaches tokens to gRPC calls and recognises the errors that mean the
 /// server rejected them.
+///
+/// The delegate keeps [GrpcTokenInterceptor] independent of the token scheme:
+/// bearer metadata, API keys and custom headers are all just call options.
+///
+/// ```dart
+/// final class BearerDelegate extends RefreshInterceptorDelegate<TokenSet> {
+///   const BearerDelegate();
+///
+///   @override
+///   grpc.CallOptions buildCallOptions(TokenSet? tokens) => grpc.CallOptions(
+///     metadata: {
+///       if (tokens != null) 'authorization': 'Bearer ${tokens.accessToken}',
+///     },
+///   );
+/// }
+/// ```
+///
+/// {@category getting-started}
 abstract class RefreshInterceptorDelegate<T> {
   /// Creates a delegate.
   const RefreshInterceptorDelegate();
