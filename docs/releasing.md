@@ -5,6 +5,9 @@ publishing. There are no secrets. The workflow is
 `.github/workflows/publish.yml`; it runs when a tag `<package>-vX.Y.Z` is
 pushed. CI also runs `dart pub publish --dry-run` for every package.
 
+> **Status:** the first release is pending; no package is on pub.dev yet, so the
+> one-time setup below applies to all of them.
+
 ## One-time setup
 
 For each package (`token_manager`, `token_manager_dio`, `token_manager_grpc`,
@@ -41,6 +44,6 @@ approval.
 
 ## Order
 
-Release `token_manager` (the core) first. The adapters depend on it with a
+Release **`token_manager`** (the core) first. The adapters depend on it with a
 `^0.2.0` style constraint that resolves from pub.dev, so a new adapter release
 that needs a new core version can only be published after the core is live.
