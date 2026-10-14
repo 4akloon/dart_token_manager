@@ -5,13 +5,34 @@ import 'package:gql_link/gql_link.dart';
 ///
 /// A failure arrives on one of two channels: an error event, such as a
 /// [ServerException] for an HTTP 401, or a [Response] whose `errors` carry an
-/// auth code, such as `extensions.code: "UNAUTHENTICATED"` in an HTTP 200.
+/// auth code, such as `extensions.code: "UNAUTHENTICATED"` in an HTTP 200. The
+/// link replays a request only when this class says the tokens were rejected,
+/// so a wrong rule either misses a rejection or replays a request that was
+/// never about the tokens.
+///
 /// Extend this class to recognise other failures, for example the
 /// `HttpLinkParserException` that `HttpLink` emits for a 401 whose body is not
-/// GraphQL JSON.
+/// GraphQL JSON:
+///
+/// ```dart
+/// final class AppAuthFailureMatcher extends AuthFailureMatcher {
+///   const AppAuthFailureMatcher();
+///
+///   @override
+///   bool isAuthError(Object error) =>
+///       (error is HttpLinkParserException &&
+///           error.response.statusCode == 401) ||
+///       super.isAuthError(error);
+/// }
+/// ```
+///
+/// {@category auth-failures}
 class AuthFailureMatcher {
   /// Creates a matcher for the HTTP [statusCodes] of a [ServerException] and
   /// the [errorCodes] in `errors[].extensions.code` of a [Response].
+  ///
+  /// The defaults are replaced, not extended: with `statusCodes: {419}` a 401
+  /// is no longer an auth failure.
   const AuthFailureMatcher({
     this.statusCodes = const {401},
     this.errorCodes = const {'UNAUTHENTICATED'},
@@ -24,10 +45,16 @@ class AuthFailureMatcher {
   final Set<String> errorCodes;
 
   /// Whether the error event [error] means the tokens were rejected.
+  ///
+  /// By default this holds for a [ServerException] whose status code is in
+  /// [statusCodes].
   bool isAuthError(Object error) =>
       error is ServerException && statusCodes.contains(error.statusCode);
 
   /// Whether one of the `errors` of [response] means the tokens were rejected.
+  ///
+  /// By default this holds when an error has a string `extensions.code` that
+  /// is in [errorCodes].
   bool isAuthResponse(Response response) =>
       response.errors?.any(_isAuthGraphQLError) ?? false;
 

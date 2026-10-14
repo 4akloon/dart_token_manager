@@ -1,6 +1,8 @@
+# Changelog
+
 ## 0.1.0
 
-### Added
+Initial release of the GraphQL adapter for token_manager.
 
 - `TokenManagerLink<T>`, a `gql_link` `Link` that attaches the tokens of a
   `TokenManager<T>` and replays a request once after the server rejects them,

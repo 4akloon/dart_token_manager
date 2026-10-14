@@ -10,10 +10,11 @@ import 'skip_authorization.dart';
 /// Attaches tokens to GraphQL requests and replays a request once after the
 /// server rejects them.
 ///
-/// Put it right before the terminating link, after a `DedupeLink`:
-/// `Link.from([DedupeLink(), TokenManagerLink(...), HttpLink(...)])`. Never
-/// combine it with graphql's `AuthLink`. The link never refreshes by itself:
-/// it asks the [TokenManager] for valid tokens and reports the rejected ones.
+/// The link never refreshes by itself: it asks the [TokenManager] for valid
+/// tokens and reports the rejected ones, so concurrent requests share one
+/// refresh. Put it right before the terminating link, after a `DedupeLink`,
+/// and never combine it with graphql's `AuthLink`, which sets the same header
+/// and cannot replay.
 ///
 /// A rejection arrives as an error event that [AuthFailureMatcher.isAuthError]
 /// accepts, or as a [Response] that [AuthFailureMatcher.isAuthResponse]
@@ -21,9 +22,25 @@ import 'skip_authorization.dart';
 /// because a mutation may already have run. Only a rejection before the first
 /// response is replayed, and only once; when the replay is rejected too, its
 /// error or response is delivered as is.
+///
+/// ```dart
+/// Link buildLink(TokenManager<TokenSet> manager) => Link.from([
+///   DedupeLink(),
+///   TokenManagerLink<TokenSet>(
+///     manager: manager,
+///     headers: (tokens) => {'Authorization': 'Bearer ${tokens.accessToken}'},
+///   ),
+///   HttpLink('https://api.example.com/graphql'),
+/// ]);
+/// ```
+///
+/// {@category getting-started}
 final class TokenManagerLink<T> extends Link {
   /// Creates a link that sends the [headers] built from the [manager]'s tokens
   /// and recognises rejections with [matcher].
+  ///
+  /// The headers are merged into the `HttpLinkHeaders` the request already
+  /// carries; on a clash the token header wins.
   TokenManagerLink({
     required TokenManager<T> manager,
     required Map<String, String> Function(T tokens) headers,
@@ -39,9 +56,9 @@ final class TokenManagerLink<T> extends Link {
   /// Sends [request] through [forward] with valid tokens.
   ///
   /// A request marked with [SkipAuthorization] is forwarded unchanged. The
-  /// manager's failures (`NotAuthenticated`, `InvalidGrant`, `Transient`)
-  /// arrive as error events. Throws a [StateError] when [forward] is null:
-  /// this link cannot terminate a chain.
+  /// manager's failures ([NotAuthenticated], [InvalidGrant], [Transient])
+  /// arrive as error events, not as exceptions of this method. Throws a
+  /// [StateError] when [forward] is null: this link cannot terminate a chain.
   @override
   Stream<Response> request(Request request, [NextLink? forward]) {
     if (forward == null) {

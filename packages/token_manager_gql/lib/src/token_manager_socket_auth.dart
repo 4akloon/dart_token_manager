@@ -3,15 +3,36 @@ import 'package:token_manager/token_manager.dart';
 /// Supplies tokens to a GraphQL WebSocket client and refreshes them when the
 /// server closes the socket for an auth reason.
 ///
-/// It knows no client: pass [initialPayload] as the `initialPayload` (or
-/// `connectionParams`) callback and [onConnectionLost] as the
-/// `onConnectionLost` callback of the client's config. The app still has to
-/// reconnect when tokens expire on a live socket, close the socket on logout,
-/// and stop the client from retrying while the user is signed out.
+/// A WebSocket link ignores the headers that `TokenManagerLink` sets, so a
+/// subscription needs its own way to carry tokens. This class knows no client:
+/// pass [initialPayload] as the `initialPayload` (or `connectionParams`)
+/// callback and [onConnectionLost] as the `onConnectionLost` callback of the
+/// client's config. The app still has to reconnect when tokens expire on a
+/// live socket, close the socket on logout, and stop the client from retrying
+/// while the user is signed out.
+///
+/// ```dart
+/// final socketAuth = TokenManagerSocketAuth<TokenSet>(
+///   manager: manager,
+///   payload: (tokens) => {'Authorization': 'Bearer ${tokens.accessToken}'},
+/// );
+/// final webSocketLink = WebSocketLink(
+///   'wss://api.example.com/graphql',
+///   config: SocketClientConfig(
+///     initialPayload: socketAuth.initialPayload,
+///     onConnectionLost: socketAuth.onConnectionLost,
+///   ),
+/// );
+/// ```
+///
+/// {@category subscriptions}
 final class TokenManagerSocketAuth<T> {
   /// Creates the callbacks for [manager]; [payload] builds the connection
   /// payload from the tokens, and a close code in [authCloseCodes] means the
   /// server rejected them.
+  ///
+  /// WebSockets have no standard auth close code, so set [authCloseCodes] to
+  /// what your server sends; the default is 4401, which graphql-ws uses.
   TokenManagerSocketAuth({
     required TokenManager<T> manager,
     required Map<String, Object?> Function(T tokens) payload,
@@ -30,8 +51,8 @@ final class TokenManagerSocketAuth<T> {
 
   /// Returns the connection payload built from valid tokens.
   ///
-  /// Throws what `validToken` throws: `NotAuthenticated`, `InvalidGrant` or
-  /// `Transient`.
+  /// Throws what [TokenManager.validToken] throws: [NotAuthenticated],
+  /// [InvalidGrant] or [Transient].
   Future<Map<String, Object?>> initialPayload() async {
     final tokens = await _manager.validToken();
     _used = tokens;
