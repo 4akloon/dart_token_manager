@@ -38,8 +38,11 @@
   Legacy users who relied on `infoDelegate` for refresh before expiry lose it
   until they move to `validToken`. Proactive refresh is planned for a later
   release.
-- `initialize()` no longer rewrites storage; it is a lazy load and is no
-  longer required.
+- `initialize()` no longer rewrites storage; it is a lazy load. It is still
+  required when using the synchronous deprecated `tokens` getter or the 0.1
+  dio/grpc adapters, which never trigger a load.
+- The deprecated `executeRefresh()` no longer swallows non-`Exception` errors
+  (0.1 used `catch (e)`); a `TypeError` from a delegate now propagates.
 - `refreshDelay` is ignored: there is no retry timer. A transient failure is
   retried by the next call to `validToken`.
 - A failed refresh no longer ends in a hang: `InvalidGrant` signs out and any

@@ -161,6 +161,11 @@ Also in the core: `TokenSet` (optional ready-made token type for the simple
 case), `InMemoryTokenStore`, `Clock`, and `RelayStream<R>`. Several providers are
 several `TokenManager<T>` instances held by the application.
 
+Note (final review): `RelayStream` is internal and not exported from the
+barrel. `authorizeStream` returns a plain `Stream<R>` with no access to the
+replayed gRPC headers and trailers, so plan 2 (the gRPC adapter) needs an API
+addition for them.
+
 `validToken({rejected})`:
 
 1. If the current token is valid (with `skew`) and not identical to `rejected`,

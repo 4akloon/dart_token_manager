@@ -112,7 +112,7 @@ class TokenManager<T> {
     await _engine.current();
   }
 
-  /// Forces a refresh; failures are swallowed.
+  /// Forces a refresh; failures that are exceptions are swallowed.
   @Deprecated('Use validToken(rejected: ...).')
   Future<void> executeRefresh() async {
     final tokens = await _engine.current();
@@ -122,7 +122,8 @@ class TokenManager<T> {
     try {
       await _engine.validToken(rejected: tokens);
     } on Exception catch (_) {
-      // The old API never threw from a refresh; failures show in the state.
+      // Exceptions show in the state. 0.1 caught everything (`catch (e)`); an
+      // Error, such as a TypeError from a delegate, now propagates.
     }
   }
 

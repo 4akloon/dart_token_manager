@@ -15,7 +15,7 @@ releases after 0.2.
 | throw `RevokedTokensException` | throw `InvalidGrant` |
 | `tokens` | `await current()` or `states` |
 | `tokensStream` | `states` (`Unauthenticated` replaces `null`) |
-| `initialize()` | not needed |
+| `initialize()` | not needed, except for the sync `tokens` getter and 0.1 adapters |
 | `executeRefresh()` / `waitForFresh` | `validToken()` |
 | `setTokens(null)` | `logout()` |
 
@@ -46,8 +46,12 @@ final tokens = await manager.validToken();
   you relied on `infoDelegate` for refresh before expiry, you lose it until
   you call `validToken` before each use. Proactive refresh is planned for a
   later release.
-- `initialize()` no longer rewrites storage; it only loads lazily and is not
-  required.
+- `initialize()` no longer rewrites storage; it only loads lazily. It is still
+  required when you use the synchronous deprecated `tokens` getter or the 0.1
+  dio/grpc adapters, which never trigger a load themselves.
+- The deprecated `executeRefresh()` no longer swallows errors that are not
+  `Exception`s: 0.1 used `catch (e)`, so a `TypeError` from a delegate now
+  propagates.
 - `refreshDelay` is ignored. There is no retry timer; a transient failure is
   retried by the next call to `validToken`.
 - A refresher should throw `InvalidGrant` only when the refresh token was
