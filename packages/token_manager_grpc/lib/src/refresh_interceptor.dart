@@ -1,18 +1,22 @@
-// interceptStreaming still uses the deprecated token_manager API until Task 6.
-// ignore_for_file: deprecated_member_use
-
 import 'dart:async';
 
 import 'package:grpc/grpc.dart' as grpc;
 import 'package:token_manager/token_manager.dart';
 
-import 'async_response_stream.dart';
 import 'attempt_response_future.dart';
+import 'attempt_response_stream.dart';
 import 'call_attempts.dart';
 import 'refresh_interceptor_delegate.dart';
+import 'request_log.dart';
 
 /// A gRPC client interceptor that sends calls with valid tokens and replays
 /// a call once when the server rejects its tokens.
+///
+/// Unary calls go through [TokenManager.authorize] and streaming calls
+/// through [TokenManager.authorizeStream]. A call fails with
+/// `NotAuthenticated` when there are no tokens. A streaming call is made
+/// again only before its first response, and only when its request stream
+/// ended after at most one request.
 class RefreshInterceptor<T> implements grpc.ClientInterceptor {
   /// Creates an interceptor that takes tokens from [manager] and attaches
   /// them with [delegate].
@@ -48,60 +52,43 @@ class RefreshInterceptor<T> implements grpc.ClientInterceptor {
     Stream<Q> requests,
     grpc.CallOptions options,
     grpc.ClientStreamingInvoker<Q, R> invoker,
-  ) => AsyncResponseStream.fromCallback((controller, setStream) async {
-    await _manager.waitForFresh;
-    final tokens = _manager.tokens;
-
-    Future<void> forward(grpc.ResponseStream<R> stream) async {
-      setStream(stream);
-      await for (final item in stream) {
-        controller.add(item);
-      }
-    }
-
-    if (tokens == null) {
-      await forward(invoker(method, requests, options));
-      return;
-    }
-
-    try {
-      await forward(
-        invoker(
-          method,
-          requests,
-          options.mergedWith(_buildAuthOptions(tokens)),
-        ),
-      );
-    } catch (error) {
-      if (error case grpc.GrpcError(code: grpc.StatusCode.unauthenticated)) {
-        await _manager.executeRefresh();
-
-        final refreshedTokens = _manager.tokens;
-
-        if (refreshedTokens == null) {
-          await forward(invoker(method, requests, options));
-          return;
+  ) {
+    final attempts = CallAttempts();
+    final log = RequestLog<Q>(requests);
+    T? used;
+    var reported = false;
+    final responses = _manager.authorizeStream<R>(
+      (tokens) => attempts.streaming(() {
+        used = tokens;
+        return invoker(method, log.next(), _withTokens(options, tokens));
+      }),
+      isAuthFailure: (error) {
+        if (!_isAuthFailure(error)) return false;
+        if (log.isReplayable) return true;
+        // Report at most once per call; the call is not replayed.
+        if (!reported) {
+          reported = true;
+          unawaited(_reportRejected(used));
         }
+        return false;
+      },
+    );
+    return AttemptResponseStream<R>(responses, attempts);
+  }
 
-        await forward(
-          invoker(
-            method,
-            requests,
-            options.mergedWith(_buildAuthOptions(refreshedTokens)),
-          ),
-        );
-      } else {
-        rethrow;
-      }
+  /// Asks the manager to renew [rejected] and ignores the outcome, because
+  /// the call that used it fails with its own error.
+  Future<void> _reportRejected(T? rejected) async {
+    try {
+      await _manager.validToken(rejected: rejected);
+    } on Exception {
+      // The caller already has the original error.
     }
-  });
+  }
 
   bool _isAuthFailure(Object error) =>
       error is grpc.GrpcError && _delegate.shouldRefresh(error);
 
   grpc.CallOptions _withTokens(grpc.CallOptions options, T tokens) =>
       options.mergedWith(_delegate.buildCallOptions(tokens));
-
-  grpc.CallOptions? _buildAuthOptions(T tokens) =>
-      _delegate.buildCallOptions(tokens);
 }
