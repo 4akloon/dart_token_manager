@@ -94,11 +94,34 @@ void main() {
       ..startNewSession()
       ..emit(const Authenticated<String>('set'));
 
+    final seen = <AuthState<String>>[];
+    final subscription = session.states.listen(seen.add);
+    await pumpEventQueue();
+    seen.clear();
+
     refresher.complete('new');
 
     expect(await result, 'set');
+    await pumpEventQueue();
+    await subscription.cancel();
+    expect(seen, isEmpty);
     expect(store.writes, 0);
     expect(session.state.tokensOrNull, 'set');
+  });
+
+  test('a superseded InvalidGrant keeps the new session untouched', () async {
+    final result = start();
+    session
+      ..startNewSession()
+      ..emit(const Authenticated<String>('set'));
+
+    refresher.fail(const InvalidGrant());
+
+    expect(await result, 'set');
+    expect(store.deletes, 0);
+    expect(session.state, isA<Authenticated<String>>());
+    expect(session.state.tokensOrNull, 'set');
+    expect(session.epoch, 1);
   });
 
   test('a superseded failure resolves with the new session tokens', () async {
