@@ -13,7 +13,7 @@ rejects them. It works with every client built on `gql_link`, such as
 
 ```yaml
 dependencies:
-  token_manager: ^0.1.0
+  token_manager: ^0.2.0
   token_manager_gql: ^0.1.0
 ```
 

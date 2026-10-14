@@ -40,3 +40,12 @@ jobs:
       - name: Test token_manager
         working-directory: packages/token_manager
         run: dart test
+      - name: Test token_manager_dio
+        working-directory: packages/token_manager_dio
+        run: dart test
+      - name: Test token_manager_grpc
+        working-directory: packages/token_manager_grpc
+        run: dart test
+      - name: Test token_manager_gql
+        working-directory: packages/token_manager_gql
+        run: dart test

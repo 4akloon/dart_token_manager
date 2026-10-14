@@ -1,4 +1,4 @@
-## 0.2.0 - Unreleased
+## 0.2.0
 
 ### Added
 - `TokenManager.create` with `validToken`, `current`, `states`, `logout`,

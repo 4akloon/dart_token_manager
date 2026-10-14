@@ -22,7 +22,7 @@ resolution: workspace
 dependencies:
   gql_exec: ^1.0.0
   gql_link: ^1.0.0
-  token_manager: ^0.1.0
+  token_manager: ^0.2.0
 
 dev_dependencies:
   gql: ^1.0.0

@@ -1,4 +1,4 @@
-## 0.2.0 - Unreleased
+## 0.2.0
 
 ### Changed
 - Renamed `RefreshInterceptor` to `DioTokenInterceptor`; the old name is a

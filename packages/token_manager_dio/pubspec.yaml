@@ -13,7 +13,7 @@ resolution: workspace
 dependencies:
   dio: ">=5.3.1 <6.0.0"
 
-  token_manager: ^0.1.0
+  token_manager: ^0.2.0
 
 dev_dependencies:
   test: ^1.31.0

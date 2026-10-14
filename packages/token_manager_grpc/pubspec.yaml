@@ -1,6 +1,6 @@
 name: token_manager_grpc
 description: gRPC interceptor for token injection, refresh, and retry.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/4akloon/dart_token_manager
 homepage: https://github.com/4akloon/dart_token_manager
 issue_tracker: https://github.com/4akloon/dart_token_manager/issues
@@ -13,7 +13,7 @@ resolution: workspace
 dependencies:
   async: ">=2.11.0 <3.0.0"
   grpc: ">=3.2.0 <6.0.0"
-  token_manager: ^0.1.0
+  token_manager: ^0.2.0
 
 dev_dependencies:
   test: ^1.31.0
