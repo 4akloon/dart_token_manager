@@ -1,93 +1,69 @@
-// Uses the deprecated token_manager API until this adapter is rewritten (plan 2).
-// ignore_for_file: deprecated_member_use
-
-import 'dart:async';
+import 'dart:io';
 
 import 'package:grpc/grpc.dart' as grpc;
 import 'package:token_manager/token_manager.dart';
 import 'package:token_manager_grpc/token_manager_grpc.dart';
 
-final class _AppTokens {
-  const _AppTokens({
-    required this.accessToken,
-    required this.refreshToken,
-  });
-
-  final String accessToken;
-  final String refreshToken;
-}
-
-final class _MemoryTokenStorage implements TokenStorage<_AppTokens> {
-  _AppTokens? _tokens;
+final class _ExampleRefresher implements TokenRefresher<TokenSet> {
+  const _ExampleRefresher();
 
   @override
-  _AppTokens? getTokens() => _tokens;
-
-  @override
-  Future<void> setTokens(_AppTokens? tokens) async {
-    _tokens = tokens;
-  }
-}
-
-final class _AppRefreshDelegate
-    extends TokenManagerRefreshDelegate<_AppTokens> {
-  const _AppRefreshDelegate();
-
-  @override
-  Future<_AppTokens> refresh(_AppTokens tokens) async {
-    return const _AppTokens(
-      accessToken: 'new_access_token',
-      refreshToken: 'new_refresh_token',
+  Future<TokenSet> refresh(TokenSet current) async {
+    // Exchange current.refreshToken with your auth server here.
+    return TokenSet(
+      accessToken: 'new-access-token',
+      refreshToken: 'new-refresh-token',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
     );
   }
 }
 
-final class _GrpcAuthDelegate extends RefreshInterceptorDelegate<_AppTokens> {
-  const _GrpcAuthDelegate();
+final class _BearerDelegate extends RefreshInterceptorDelegate<TokenSet> {
+  const _BearerDelegate();
 
   @override
-  grpc.CallOptions buildCallOptions(_AppTokens? tokens) {
-    final metadata = <String, String>{};
-    if (tokens != null) {
-      metadata['authorization'] = 'Bearer ${tokens.accessToken}';
-    }
-    return grpc.CallOptions(metadata: metadata);
-  }
+  grpc.CallOptions buildCallOptions(TokenSet? tokens) => grpc.CallOptions(
+    metadata: {
+      if (tokens != null) 'authorization': 'Bearer ${tokens.accessToken}',
+    },
+  );
 }
 
 Future<void> main() async {
-  final manager = TokenManager<_AppTokens>(
-    storage: _MemoryTokenStorage(),
-    refreshDelegate: const _AppRefreshDelegate(),
+  final manager = TokenManager<TokenSet>.create(
+    store: InMemoryTokenStore<TokenSet>(),
+    refresher: const _ExampleRefresher(),
+    info: const TokenSetInfo(),
   );
-  await manager.initialize();
-  final StreamSubscription<_AppTokens?> tokensSubscription = manager
-      .tokensStream
-      .listen((_) {});
-
   await manager.setTokens(
-    const _AppTokens(
-      accessToken: 'access_123',
-      refreshToken: 'refresh_123',
+    TokenSet(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
     ),
   );
 
-  final grpc.ClientInterceptor interceptor = RefreshInterceptor<_AppTokens>(
-    manager: manager,
-    delegate: const _GrpcAuthDelegate(),
+  final channel = grpc.ClientChannel(
+    'localhost',
+    port: 50051,
+    options: const grpc.ChannelOptions(
+      credentials: grpc.ChannelCredentials.insecure(),
+    ),
   );
-  _configureClient(<grpc.ClientInterceptor>[interceptor]);
+  // Pass the same interceptors to your generated client, for example
+  // `GreeterClient(channel, interceptors: [interceptor])`. Every call then
+  // carries a valid token and is replayed once after UNAUTHENTICATED.
+  final client = grpc.Client(
+    channel,
+    interceptors: [
+      RefreshInterceptor<TokenSet>(
+        manager: manager,
+        delegate: const _BearerDelegate(),
+      ),
+    ],
+  );
+  stdout.writeln('Client ready: ${client.runtimeType}');
 
-  await tokensSubscription.cancel();
+  await channel.shutdown();
   await manager.dispose();
-}
-
-void _configureClient(List<grpc.ClientInterceptor> interceptors) {
-  if (interceptors.isEmpty) {
-    throw ArgumentError.value(
-      interceptors,
-      'interceptors',
-      'At least one interceptor is required.',
-    );
-  }
 }
