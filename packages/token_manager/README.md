@@ -26,6 +26,7 @@ Pure Dart, no runtime dependencies, and it knows nothing about HTTP: the transpo
 - [Authorizing calls](#authorizing-calls)
 - [Errors](#errors)
 - [Migrating from 0.1](#migrating-from-01)
+- [Recipes](#recipes)
 - [Reference](#reference)
 
 ## Install
@@ -158,6 +159,15 @@ transient. Storage failures are never reported as refresh failures.
 ## Migrating from 0.1
 
 The old API still works in 0.2, marked `@Deprecated`. See **[doc/migration.md](doc/migration.md)**.
+
+## Recipes
+
+Each recipe is one page with complete code that is compiled and tested in this repository.
+
+- [Sign in and store the tokens](doc/recipes/login_and_set_tokens.md)
+- [Keep the session in secure storage](doc/recipes/secure_token_store.md)
+- [Send the user to sign-in when the session ends](doc/recipes/session_expiry.md)
+- [Test code that uses tokens without a network](doc/recipes/testing_without_network.md)
 
 ## Reference
 
