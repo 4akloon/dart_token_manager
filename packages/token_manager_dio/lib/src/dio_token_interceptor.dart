@@ -6,6 +6,27 @@ import 'request_marks.dart';
 
 /// Dio interceptor that attaches tokens and replays a request once after an
 /// auth failure.
+///
+/// The interceptor never refreshes by itself: it asks [TokenManager] for a
+/// valid token before sending and, when the server rejects the request, for a
+/// replacement of the rejected one. This keeps the refresh single-flight and
+/// leaves storage and logout to the core. A replay is marked, so it cannot
+/// loop.
+///
+/// A failure to obtain or renew tokens reaches the caller as a [DioException]
+/// whose `error` is a `NotAuthenticated`, `InvalidGrant` or `Transient`.
+///
+/// ```dart
+/// dio.interceptors.add(
+///   DioTokenInterceptor<TokenSet>(
+///     manager: manager,
+///     delegate: const BearerDelegate(),
+///     dio: dio,
+///   ),
+/// );
+/// ```
+///
+/// {@category getting-started}
 class DioTokenInterceptor<T> extends Interceptor {
   /// Creates an interceptor over [manager].
   ///

@@ -1,4 +1,8 @@
+# Changelog
+
 ## 0.2.0
+
+Rebuilt on the new `token_manager` core; failures to renew tokens are no longer swallowed.
 
 ### Changed
 - Renamed `RefreshInterceptor` to `DioTokenInterceptor`; the old name is a
@@ -20,14 +24,14 @@
 - The replay is sent with `Dio.fetch` on a copy of the request: the `Dio` given
   as `dio` keeps its `baseUrl` (0.1 overwrote it), the response type of the
   request is kept, and a `FormData` body is cloned.
-- Requires `dio` 5.3.1 or newer (`FormData.clone`, used to replay a form).
-- The request is no longer tagged with `extra['_auth_tokens']`; the interceptor
+- **Breaking:** requires `dio` 5.3.1 or newer (`FormData.clone`, used to replay a form).
+- **Breaking:** the request is no longer tagged with `extra['_auth_tokens']`; the interceptor
   uses `extra['token_manager_dio.tokens']`.
 
 ### Behaviour changes
-- A request made while logged out fails with a `DioException` whose `error` is
+- **Breaking:** a request made while logged out fails with a `DioException` whose `error` is
   `NotAuthenticated` and is not sent. 0.1 sent it without credentials.
-- A failure to renew tokens is no longer swallowed: the `DioException.error` is
+- **Breaking:** a failure to renew tokens is no longer swallowed: the `DioException.error` is
   `InvalidGrant` (the session ended) or `Transient` (the session is kept), with
   the original 401 as `response`. 0.1 swallowed refresh errors and replayed
   with stale or missing tokens.
@@ -42,7 +46,7 @@
   default) are refreshed before the request, and there is no `waitForFresh`
   step because `validToken` joins a refresh in flight.
 
-## 0.1.0 - 2026-03-27
+## 0.1.0
 
 ### Added
 - Initial Dio integration package for `token_manager`.

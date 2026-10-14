@@ -1,9 +1,24 @@
 import 'package:dio/dio.dart';
 
-/// Defines token application and refresh decision logic for Dio.
+/// Defines how tokens reach a Dio request and which responses are auth
+/// failures.
 ///
-/// Override [applyTo]. A 0.1 delegate that overrides only
+/// Override [applyTo]; override [shouldRefresh] only when the API signals an
+/// expired token other than with status 401. A 0.1 delegate that overrides only
 /// `applyTokensToRequest` keeps working: the default [applyTo] calls it.
+///
+/// ```dart
+/// final class BearerDelegate extends RefreshInterceptorDelegate<TokenSet> {
+///   const BearerDelegate();
+///
+///   @override
+///   void applyTo(RequestOptions options, TokenSet tokens) {
+///     options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
+///   }
+/// }
+/// ```
+///
+/// {@category getting-started}
 abstract class RefreshInterceptorDelegate<T> {
   /// Creates a delegate.
   const RefreshInterceptorDelegate();
