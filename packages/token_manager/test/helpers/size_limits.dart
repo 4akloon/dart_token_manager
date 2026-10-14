@@ -3,9 +3,9 @@ import 'dart:io';
 /// Measures the size limits of `CLAUDE.md` ("Code quality rules") on one
 /// package and turns a measurement into failure messages.
 ///
-/// The measurement needs no analyzer: the package has no dependencies besides
-/// the Dart SDK, and neither does this test. Files are counted with the newline count
-/// that `wc -l` gives. Methods are found by indentation, see [measureMethods].
+/// The test needs no analyzer package: it only reads files with `dart:io`.
+/// Files are counted with the newline count that `wc -l` gives. Methods are
+/// found by indentation, see [measureMethods].
 ///
 /// Both limits are a ratchet: a unit over its limit that is in the allowlist
 /// may only shrink, and a unit over its limit that is not in it fails.
