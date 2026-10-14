@@ -47,9 +47,21 @@ class AuthFailureMatcher {
   /// Whether the error event [error] means the tokens were rejected.
   ///
   /// By default this holds for a [ServerException] whose status code is in
-  /// [statusCodes].
+  /// [statusCodes], and for one with status 403 whose parsed response carries
+  /// an error code from [errorCodes]. A 403 without such a code is a missing
+  /// permission and is not an auth failure.
   bool isAuthError(Object error) =>
-      error is ServerException && statusCodes.contains(error.statusCode);
+      error is ServerException &&
+      (statusCodes.contains(error.statusCode) || _isForbiddenRejection(error));
+
+  bool _isForbiddenRejection(ServerException error) {
+    final Response? parsed = error.parsedResponse;
+    return error.statusCode == _forbidden &&
+        parsed != null &&
+        isAuthResponse(parsed);
+  }
+
+  static const int _forbidden = 403;
 
   /// Whether one of the `errors` of [response] means the tokens were rejected.
   ///

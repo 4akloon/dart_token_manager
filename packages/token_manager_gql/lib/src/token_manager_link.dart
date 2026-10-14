@@ -58,7 +58,9 @@ final class TokenManagerLink<T> extends Link {
   ///
   /// A request marked with [SkipAuthorization] is forwarded unchanged. The
   /// manager's failures ([NotAuthenticated], [InvalidGrant], [Transient])
-  /// arrive as error events, not as exceptions of this method. Throws a
+  /// arrive as error events, each wrapped in a [LinkException] whose
+  /// `originalException` is the failure, not as exceptions of this method.
+  /// Throws a
   /// [StateError] when [forward] is null: this link cannot terminate a chain.
   @override
   Stream<Response> request(Request request, [NextLink? forward]) {
@@ -120,10 +122,24 @@ final class TokenManagerLink<T> extends Link {
   ) {
     if (error is _RejectedResponse) {
       sink.add(error.response);
+    } else if (error is NotAuthenticated || error is RefreshFailure) {
+      sink.addError(_ManagerFailureException(error, stackTrace), stackTrace);
     } else {
       sink.addError(error, stackTrace);
     }
   }
+}
+
+/// Wraps a failure of the manager so that GraphQL clients map it to a link
+/// error; the failure stays reachable as `originalException`.
+final class _ManagerFailureException extends LinkException {
+  const _ManagerFailureException(
+    Object super.originalException,
+    StackTrace super.originalStackTrace,
+  );
+
+  @override
+  String toString() => 'LinkException: $originalException';
 }
 
 /// Carries a rejected [Response] through the error channel of
