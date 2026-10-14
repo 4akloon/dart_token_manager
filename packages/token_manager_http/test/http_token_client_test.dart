@@ -1,29 +1,16 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:http/http.dart';
 import 'package:test/test.dart';
 import 'package:token_manager/token_manager.dart';
 import 'package:token_manager_http/token_manager_http.dart';
 
 import 'helpers/client_fixture.dart';
-import 'helpers/fake_answer.dart';
 import 'helpers/recording_client.dart';
-import 'helpers/sent_request.dart';
-
-FakeAnswer _alwaysOk(SentRequest request) => FakeAnswer.ok;
-
-StreamedRequest _streamed(String body) {
-  final request = StreamedRequest('POST', ClientFixture.url);
-  request.sink.add(utf8.encode(body));
-  unawaited(request.sink.close());
-  return request;
-}
+import 'helpers/test_requests.dart';
 
 void main() {
   group('with tokens', () {
     test('attaches the bearer header of the current tokens', () async {
-      final fixture = ClientFixture(answer: _alwaysOk);
+      final fixture = ClientFixture(answer: TestRequests.alwaysOk);
 
       await fixture.client.get(ClientFixture.url);
 
@@ -31,7 +18,7 @@ void main() {
     });
 
     test('returns the response of the inner client', () async {
-      final fixture = ClientFixture(answer: _alwaysOk);
+      final fixture = ClientFixture(answer: TestRequests.alwaysOk);
 
       final response = await fixture.client.get(ClientFixture.url);
 
@@ -40,7 +27,7 @@ void main() {
     });
 
     test('sends the method, headers and body of the request', () async {
-      final fixture = ClientFixture(answer: _alwaysOk);
+      final fixture = ClientFixture(answer: TestRequests.alwaysOk);
 
       await fixture.client.send(fixture.post());
 
@@ -51,7 +38,7 @@ void main() {
     });
 
     test('leaves the caller request without the token header', () async {
-      final fixture = ClientFixture(answer: _alwaysOk);
+      final fixture = ClientFixture(answer: TestRequests.alwaysOk);
       final request = fixture.post();
 
       await fixture.client.send(request);
@@ -61,7 +48,7 @@ void main() {
     });
 
     test('the token header replaces a header the caller set', () async {
-      final fixture = ClientFixture(answer: _alwaysOk);
+      final fixture = ClientFixture(answer: TestRequests.alwaysOk);
       final request = fixture.post()..headers['Authorization'] = 'Bearer stale';
 
       await fixture.client.send(request);
@@ -69,11 +56,25 @@ void main() {
       expect(fixture.inner.requests.single.authorization, 'Bearer old');
       expect(request.headers['authorization'], 'Bearer stale');
     });
+
+    test(
+      'the token header replaces a lower-case header the caller set',
+      () async {
+        final fixture = ClientFixture(answer: TestRequests.alwaysOk);
+        final request = fixture.post()
+          ..headers['authorization'] = 'Bearer stale';
+
+        await fixture.client.send(request);
+
+        expect(fixture.inner.requests.single.authorization, 'Bearer old');
+        expect(request.headers['authorization'], 'Bearer stale');
+      },
+    );
   });
 
   group('headers', () {
     test('sends the headers the builder returns', () async {
-      final fixture = ClientFixture(answer: _alwaysOk);
+      final fixture = ClientFixture(answer: TestRequests.alwaysOk);
       final client = fixture.clientWith(
         headers: (tokens) => {'X-Api-Key': tokens.accessToken},
       );
@@ -86,7 +87,7 @@ void main() {
     });
 
     test('works with any token type that has a headers builder', () async {
-      final inner = RecordingClient(answer: _alwaysOk);
+      final inner = RecordingClient(answer: TestRequests.alwaysOk);
       final client = HttpTokenClient<String>(
         manager: TokenManager<String>.create(
           store: InMemoryTokenStore<String>('abc'),
@@ -115,7 +116,10 @@ void main() {
 
   group('without tokens', () {
     test('a request shouldAuthorize declines is sent unchanged', () async {
-      final fixture = ClientFixture(isSignedIn: false, answer: _alwaysOk);
+      final fixture = ClientFixture(
+        isSignedIn: false,
+        answer: TestRequests.alwaysOk,
+      );
       final client = fixture.clientWith(
         shouldAuthorize: (request) => request.url.path != '/login',
       );
@@ -128,7 +132,10 @@ void main() {
     });
 
     test('fails with NotAuthenticated and sends nothing', () async {
-      final fixture = ClientFixture(isSignedIn: false, answer: _alwaysOk);
+      final fixture = ClientFixture(
+        isSignedIn: false,
+        answer: TestRequests.alwaysOk,
+      );
 
       await expectLater(
         fixture.client.get(ClientFixture.url),
@@ -140,8 +147,8 @@ void main() {
 
   group('streamed bodies', () {
     test('a StreamedRequest is sent with the token header', () async {
-      final fixture = ClientFixture(answer: _alwaysOk);
-      final request = _streamed('chunk');
+      final fixture = ClientFixture(answer: TestRequests.alwaysOk);
+      final request = TestRequests.streamed('chunk');
 
       await fixture.client.send(request);
 
@@ -152,7 +159,7 @@ void main() {
     });
 
     test('a MultipartRequest keeps its boundary and fields', () async {
-      final fixture = ClientFixture(answer: _alwaysOk);
+      final fixture = ClientFixture(answer: TestRequests.alwaysOk);
       final request = MultipartRequest('POST', ClientFixture.url)
         ..fields['name'] = 'ada';
 
@@ -172,7 +179,9 @@ void main() {
     test('a rejected StreamedRequest is returned as is', () async {
       final fixture = ClientFixture();
 
-      final response = await fixture.client.send(_streamed('chunk'));
+      final response = await fixture.client.send(
+        TestRequests.streamed('chunk'),
+      );
 
       expect(response.statusCode, 401);
       expect(await response.stream.bytesToString(), 'denied');
@@ -193,7 +202,7 @@ void main() {
     test('its rejection starts a refresh for the next request', () async {
       final fixture = ClientFixture();
 
-      await fixture.client.send(_streamed('chunk'));
+      await fixture.client.send(TestRequests.streamed('chunk'));
       await pumpEventQueue();
       final next = await fixture.client.get(ClientFixture.url);
 
@@ -209,7 +218,9 @@ void main() {
       () async {
         final fixture = ClientFixture(refreshFailure: const InvalidGrant());
 
-        final response = await fixture.client.send(_streamed('chunk'));
+        final response = await fixture.client.send(
+          TestRequests.streamed('chunk'),
+        );
         await pumpEventQueue();
 
         expect(response.statusCode, 401);
