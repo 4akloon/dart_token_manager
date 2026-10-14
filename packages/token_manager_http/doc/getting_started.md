@@ -36,9 +36,10 @@ Without `headers`, a token type other than `TokenSet` throws an
 
 For every request that passes `shouldAuthorize` (all of them by default) the
 client asks the manager for valid tokens. The manager refreshes them first
-when they are about to expire, and concurrent requests share one refresh. A copy of the request is sent with the header, so your
-request object never changes. A request that fails `shouldAuthorize` is sent
-unchanged without tokens and is never replayed.
+when they are about to expire, and concurrent requests share one refresh. A
+copy of the request is sent with the header, so your request object never
+changes. A request that fails `shouldAuthorize` is sent unchanged without
+tokens and is never replayed.
 
 If the server rejects the tokens (status 401 by default), the client asks the
 manager for a replacement and sends the request **once more**. It never

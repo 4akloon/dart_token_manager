@@ -5,9 +5,12 @@
 ![Transport](https://img.shields.io/badge/transport-package%3Ahttp-0175C2?logo=dart&logoColor=white)
 ![Part of](https://img.shields.io/badge/part_of-token__manager-informational)
 
-**The `package:http` adapter for [`token_manager`](https://pub.dev/packages/token_manager)**: `HttpTokenClient`,
-a `BaseClient` that wraps your `Client`, attaches the manager's tokens to every request that passes `shouldAuthorize` and
-replays a request once after the server rejects them. It depends only on `http` and `token_manager`.
+**The `package:http` adapter for
+[`token_manager`](https://pub.dev/packages/token_manager)**:
+`HttpTokenClient`, a `BaseClient` that wraps your `Client`, attaches the
+manager's tokens to every request that passes `shouldAuthorize` and replays a
+request once after the server rejects them. It depends only on `http` and
+`token_manager`.
 
 ## Contents
 
