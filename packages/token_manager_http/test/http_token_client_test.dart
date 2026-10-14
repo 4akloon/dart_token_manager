@@ -176,6 +176,20 @@ void main() {
   });
 
   group('a request sent once', () {
+    test(
+      'a MultipartRequest leaves the caller headers without a token',
+      () async {
+        final fixture = ClientFixture(answer: TestRequests.alwaysOk);
+        final request = MultipartRequest('POST', ClientFixture.url)
+          ..fields['name'] = 'ada';
+
+        await fixture.client.send(request);
+
+        expect(fixture.inner.requests.single.authorization, 'Bearer old');
+        expect(request.headers.containsKey('authorization'), isFalse);
+      },
+    );
+
     test('a rejected StreamedRequest is returned as is', () async {
       final fixture = ClientFixture();
 
