@@ -17,6 +17,7 @@ export 'src/token_info_delegate.dart' show TokenInfoDelegate;
 export 'src/token_manager.dart' show TokenManager;
 export 'src/token_manager_refresh_delegate.dart'
     show TokenManagerRefreshDelegate;
+export 'src/token_manager_registry.dart' show TokenManagerRegistry;
 export 'src/token_refresher.dart' show TokenRefresher;
 export 'src/token_set.dart' show TokenSet;
 export 'src/token_set_info.dart' show TokenSetInfo;
