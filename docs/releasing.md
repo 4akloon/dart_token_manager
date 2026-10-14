@@ -5,17 +5,19 @@ publishing. There are no secrets. The workflow is
 `.github/workflows/publish.yml`; it runs when a tag `<package>-vX.Y.Z` is
 pushed. CI also runs `dart pub publish --dry-run` for every package.
 
-> **Status:** the first release is pending; no package is on pub.dev yet, so the
-> one-time setup below applies to all of them.
+> **Status:** `token_manager`, `token_manager_dio` and `token_manager_grpc` 0.1.x
+> are on pub.dev; 0.2.0 of these three and `token_manager_gql` 0.1.0 are the
+> pending release. `token_manager_gql` does not exist on pub.dev yet.
 
 ## One-time setup
 
 For each package (`token_manager`, `token_manager_dio`, `token_manager_grpc`,
 `token_manager_gql`):
 
-1. The package must already exist on pub.dev. The first publish of a brand-new
-   package (for example `token_manager_gql`) must be manual: run
-   `dart pub publish` from `packages/<package>`.
+1. The package must already exist on pub.dev. Only a brand-new package
+   (`token_manager_gql` now, `token_manager_http` later) needs a manual first
+   publish: run `dart pub publish` from `packages/<package>`. The other
+   packages are already on pub.dev.
 2. On pub.dev open the package, then Admin, then Automated publishing, and
    enable GitHub Actions publishing:
    - Repository: `4akloon/dart_token_manager`

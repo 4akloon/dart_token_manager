@@ -3,7 +3,7 @@
 [![CI](https://github.com/4akloon/dart_token_manager/actions/workflows/ci.yml/badge.svg)](https://github.com/4akloon/dart_token_manager/actions/workflows/ci.yml)
 ![Dart](https://img.shields.io/badge/Dart-%3E%3D3.10-0175C2?logo=dart&logoColor=white)
 ![Transports](https://img.shields.io/badge/transports-dio%20%7C%20gRPC%20%7C%20GraphQL-informational)
-![Status](https://img.shields.io/badge/status-pre--release-orange)
+![Status](https://img.shields.io/badge/status-0.2.0%20pending-orange)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
 
 **Client-side token lifecycle for Dart — storage, single-flight refresh, an observable session
@@ -45,8 +45,9 @@ Future<void> main() async {
 }
 ```
 
-> **Status: pre-release.** The packages are not on pub.dev yet: the first release is pending, so
-> the version constraints below resolve only after it. Until then use a path or git dependency.
+> **Status: 0.2.0 release pending.** `token_manager`, `token_manager_dio` and `token_manager_grpc`
+> 0.1.x are on pub.dev; 0.2.0 of these three and the first release of `token_manager_gql` (0.1.0)
+> are not published yet. Until then use a path or git dependency for the new versions.
 
 ---
 
@@ -94,7 +95,7 @@ dependencies:
   token_manager_dio: ^0.2.0    # or token_manager_grpc: ^0.2.0 / token_manager_gql: ^0.1.0
 ```
 
-> The first release is pending, so these constraints do not resolve on pub.dev yet.
+> These are the versions current after the pending 0.2.0 release; they do not resolve on pub.dev yet.
 
 ## Getting started
 
