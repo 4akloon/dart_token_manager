@@ -22,6 +22,7 @@ built on [`gql_link`](https://pub.dev/packages/gql_link). It works with every cl
 - [Subscriptions](#subscriptions)
 - [Errors](#errors)
 - [Dependency constraints](#dependency-constraints)
+- [Recipes](#recipes)
 - [Reference](#reference)
 
 ## Install
@@ -236,6 +237,12 @@ Listen to `manager.states` to send the user to sign-in on `Unauthenticated`.
 `gql_exec` 1.1.0 is retracted, and `gql_link` 1.1.0 requires `gql_exec ^1.1.0`. This package therefore
 accepts `gql_link ^1.0.0` and `gql_exec ^1.0.0`, which resolve to the stable `gql_link` 1.0.0+1 and
 `gql_exec` 1.0.0+1 (their API is the same as 1.1.0) and match what `graphql` 5.x and `ferry` require.
+
+## Recipes
+
+Each recipe is one page with complete code that is compiled and tested in this repository.
+
+- [Queries and WebSocket subscriptions](doc/recipes/queries_and_subscriptions.md)
 
 ## Reference
 
