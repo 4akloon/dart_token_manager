@@ -9,6 +9,7 @@ import '../token_refresher.dart';
 import '../token_store.dart';
 import 'refresh_policy.dart';
 import 'replay_value.dart';
+import 'serial_queue.dart';
 
 /// Loads, persists and refreshes the tokens of one session.
 ///
@@ -28,12 +29,12 @@ final class TokenEngine<T> {
   final TokenStore<T> _store;
   final TokenRefresher<T>? _refresher;
   final RefreshPolicy<T> _policy;
+  final SerialQueue _queue = SerialQueue();
   final ReplayValue<AuthState<T>> _states = ReplayValue<AuthState<T>>(
     Unauthenticated<T>(),
   );
 
   Future<void>? _loading;
-  Future<void> _tail = Future<void>.value();
   Future<T>? _flight;
   int _epoch = 0;
 
@@ -81,7 +82,7 @@ final class TokenEngine<T> {
   /// Stores [tokens] and makes them the current session.
   Future<void> setTokens(T tokens) async {
     await _loadUnlessBroken();
-    await _exclusive<void>(() async {
+    await _queue.run<void>(() async {
       await _store.write(tokens);
       _markLoaded();
       _startNewSession();
@@ -92,7 +93,7 @@ final class TokenEngine<T> {
   /// Removes the tokens and signs the session out.
   Future<void> logout() async {
     await _loadUnlessBroken();
-    await _exclusive<void>(_clear);
+    await _queue.run<void>(_clear);
   }
 
   /// Closes [states]; a refresh that finishes later is still persisted.
@@ -212,7 +213,7 @@ final class TokenEngine<T> {
 
   /// Ends the session after a dead grant; false when it was already replaced.
   Future<bool> _endSession(int epoch) {
-    return _exclusive<bool>(() async {
+    return _queue.run<bool>(() async {
       if (epoch != _epoch) {
         return false;
       }
@@ -233,7 +234,7 @@ final class TokenEngine<T> {
   /// The server already rotated the old tokens, so a failed write still keeps
   /// [refreshed] as the in-memory state.
   Future<T?> _commit(int epoch, T refreshed) {
-    return _exclusive<T?>(() async {
+    return _queue.run<T?>(() async {
       if (epoch != _epoch) {
         return null;
       }
@@ -260,12 +261,5 @@ final class TokenEngine<T> {
       throw const NotAuthenticated();
     }
     return tokens;
-  }
-
-  /// Runs [action] after every earlier exclusive action has finished.
-  Future<R> _exclusive<R>(Future<R> Function() action) {
-    final run = _tail.then<R>((_) => action());
-    _tail = run.then<void>((_) {}, onError: (_) {});
-    return run;
   }
 }
