@@ -22,6 +22,7 @@ the server rejects them and replays the request. It depends only on `http` and `
 - [Closing](#closing)
 - [Testing](#testing)
 - [Dependency constraints](#dependency-constraints)
+- [Recipes](#recipes)
 - [Reference](#reference)
 
 ## Install
@@ -153,6 +154,12 @@ nothing touches the network. **[doc/testing.md](doc/testing.md)**
 
 `http ^1.5.0`: 1.5.0 added `AbortableRequest` and `AbortableStreamedRequest`, which the client uses to keep
 the abort trigger of a request on the copy it sends.
+
+## Recipes
+
+Each recipe is one page with complete code that is compiled and tested in this repository.
+
+- [An authorized `http.Client`](doc/recipes/authorized_client.md)
 
 ## Reference
 
