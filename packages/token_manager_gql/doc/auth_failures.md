@@ -63,9 +63,25 @@ final class AppAuthFailureMatcher extends AuthFailureMatcher {
 }
 ```
 
-The same applies to a 403 whose body carries `UNAUTHENTICATED` and arrives as a
-server exception: its status is not in `statusCodes`, so it is never replayed
-until you override `isAuthError`.
+## A 403 is not replayed by default
+
+`HttpLink` throws an `HttpLinkServerException` for every HTTP status of 300 or
+more, even when the body is GraphQL JSON with `extensions.code:
+"UNAUTHENTICATED"`. Its status is 403, which is not in the default
+`statusCodes` ({401}), so `isAuthError` is false, the request is not replayed
+and the exception reaches the client. The `UNAUTHENTICATED` code is only read
+from a `Response`, which `HttpLink` does not emit for a 403. To replay a 403,
+add it to `statusCodes`:
+
+```dart
+import 'package:token_manager_gql/token_manager_gql.dart';
+
+const matcher = AuthFailureMatcher(statusCodes: {401, 403});
+```
+
+Many servers use 403 for a missing permission, not for a rejected token. Opt
+in only when yours sends 403 for rejected tokens: otherwise every forbidden
+request is replayed once after a pointless refresh.
 
 ## Operations without tokens
 
@@ -87,11 +103,15 @@ sent while signed out fails with `NotAuthenticated`.
 
 ## Errors from the manager
 
-The manager's failures reach the client as error events, not as
-`LinkException`s:
+When the manager cannot supply tokens, `TokenManagerLink` neither throws from
+`request` nor wraps the failure in a `LinkException`: the stream returned by
+`request` emits the `RefreshFailure` or `NotAuthenticated` object itself as an
+error event, and the request is not sent.
 
-- `NotAuthenticated` — there is no session; the request is not sent.
-- `InvalidGrant` — the session ended and the manager signed out.
+- `NotAuthenticated` — there is no session.
+- `InvalidGrant` — the refresh was refused, the session ended and the manager
+  signed out. This also reaches the client when it happens during the replay.
 - `Transient` — the refresh may succeed later; the session stays.
 
-Listen to `manager.states` to send the user to sign-in on `Unauthenticated`.
+A client above the link may wrap what it receives in its own exception type;
+the link itself delivers the objects as they are. Listen to `manager.states` to send the user to sign-in on `Unauthenticated`.
