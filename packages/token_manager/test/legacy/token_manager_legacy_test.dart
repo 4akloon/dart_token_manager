@@ -75,6 +75,46 @@ void main() {
     await seen;
   });
 
+  test('tokensStream emits each tokens value once across a refresh', () async {
+    final legacy = manager();
+    await legacy.setTokens('old');
+    final seen = <String?>[];
+    legacy.tokensStream.listen(seen.add);
+
+    final refreshing = legacy.executeRefresh();
+    await settle();
+    delegate.pending!.complete('new');
+    await refreshing;
+    await settle();
+
+    expect(seen, ['old', 'new']);
+  });
+
+  test('tokensStream emits no duplicate after a transient failure', () async {
+    delegate.failWith = Exception('offline');
+    final legacy = manager();
+    await legacy.setTokens('old');
+    final seen = <String?>[];
+    legacy.tokensStream.listen(seen.add);
+
+    await legacy.executeRefresh();
+    await settle();
+
+    expect(seen, ['old']);
+  });
+
+  test('tokensStream emits null once on logout', () async {
+    final legacy = manager();
+    await legacy.setTokens('old');
+    final seen = <String?>[];
+    legacy.tokensStream.listen(seen.add);
+
+    await legacy.logout();
+    await settle();
+
+    expect(seen, ['old', null]);
+  });
+
   test('setTokens persists, and null clears the storage', () async {
     final legacy = manager();
     await legacy.initialize();

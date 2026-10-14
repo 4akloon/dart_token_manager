@@ -104,7 +104,7 @@ class TokenManager<T> {
   /// Emits the tokens on every change; `null` means signed out.
   @Deprecated('Use states.')
   Stream<T?> get tokensStream =>
-      _engine.states.map((state) => state.tokensOrNull);
+      _engine.states.map((state) => state.tokensOrNull).distinct(identical);
 
   /// Loads the stored tokens.
   @Deprecated('Loading is lazy; use current().')
