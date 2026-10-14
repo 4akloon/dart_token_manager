@@ -171,9 +171,11 @@ dio.interceptors.add(
 
 ## Documentation
 
+- **[Recipes](docs/recipes.md)** — copy-paste solutions: sign in, secure storage, dio, http, gRPC, GraphQL.
 - **[Core README](packages/token_manager/README.md)** — concepts, failures, `authorize`.
 - **[Migrating from 0.1](packages/token_manager/doc/migration.md)** — the redesign of the core.
 - [dio](packages/token_manager_dio/README.md) · [http](packages/token_manager_http/README.md) · [gRPC](packages/token_manager_grpc/README.md) · [GraphQL](packages/token_manager_gql/README.md) — adapter guides.
+- [llms.txt](llms.txt) — the same entry points for a coding agent that reads the repository.
 - [Releasing](docs/releasing.md) — tags, OIDC publishing, release order.
 - [Design spec](docs/superpowers/specs/2026-10-14-token-manager-redesign-design.md) — the redesign.
 

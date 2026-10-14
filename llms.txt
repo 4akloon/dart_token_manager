@@ -1,0 +1,32 @@
+# dart_token_manager
+
+> Client-side token lifecycle for Dart and Flutter: storage, single-flight refresh on 401, an observable session state and adapters for dio, package:http, gRPC and GraphQL. Use it instead of a hand-written refresh interceptor when several requests can fail with 401 at once. The core, `token_manager`, is pure Dart; each adapter attaches the header, recognises an auth failure and replays the request once, and never refreshes by itself.
+
+Install the core plus the adapter for your transport from pub.dev. Every recipe below is complete, compiled code with a test.
+
+## Packages
+
+- [token_manager](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/README.md): the core. Token storage, single-flight refresh, typed refresh failures, session state stream.
+- [token_manager_dio](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_dio/README.md): Dio interceptor that attaches the bearer token, refreshes once on 401 and retries.
+- [token_manager_http](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_http/README.md): package:http Client that attaches the bearer token, refreshes once on 401 and replays.
+- [token_manager_grpc](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_grpc/README.md): gRPC client interceptor for unary and streaming calls.
+- [token_manager_gql](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_gql/README.md): gql_link Link for GraphQL queries, mutations and WebSocket subscriptions.
+
+## Recipes
+
+- [Recipe index](https://github.com/4akloon/dart_token_manager/blob/main/docs/recipes.md): every recipe by task and by package.
+- [Sign in and store the tokens](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/recipes/login_and_set_tokens.md): create the manager, sign in, map refresh failures.
+- [Keep the session in secure storage](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/recipes/secure_token_store.md): a custom TokenStore over secure storage.
+- [Send the user to sign-in when the session ends](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/recipes/session_expiry.md): react to logout and a dead refresh token from the states stream.
+- [Test code that uses tokens without a network](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/recipes/testing_without_network.md): fake clock, fake refresher, fake server.
+- [Replace a hand-written Dio refresh interceptor](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_dio/doc/recipes/replace_refresh_interceptor.md): one refresh for parallel 401 responses.
+- [Skip auth for the login and refresh endpoints in Dio](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_dio/doc/recipes/skip_auth_endpoints.md): a second Dio without the interceptor.
+- [An authorized http.Client](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_http/doc/recipes/authorized_client.md): bearer token, refresh on 401 and replay for package:http.
+- [Unary and streaming gRPC calls with one refresh](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_grpc/doc/recipes/unary_and_streaming.md): the interceptor for generated clients.
+- [GraphQL queries and WebSocket subscriptions](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_gql/doc/recipes/queries_and_subscriptions.md): TokenManagerLink and TokenManagerSocketAuth.
+
+## Migration
+
+- [token_manager: migrating from 0.1](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/migration.md): mapping from the deprecated API.
+- [token_manager_dio: migrating from 0.1](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_dio/doc/migration.md): RefreshInterceptor to DioTokenInterceptor.
+- [token_manager_grpc: migrating from 0.1](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_grpc/doc/migration.md): RefreshInterceptor to GrpcTokenInterceptor.
