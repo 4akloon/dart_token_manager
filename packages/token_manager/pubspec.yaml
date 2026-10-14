@@ -1,9 +1,15 @@
 name: token_manager
-description: Token lifecycle management with storage, refresh, and token streams.
+description: "Single-flight OAuth/JWT token refresh for Dart: pluggable storage, an observable session state and typed refresh failures."
 version: 0.2.1
-repository: https://github.com/4akloon/dart_token_manager
+repository: https://github.com/4akloon/dart_token_manager/tree/main/packages/token_manager
 homepage: https://github.com/4akloon/dart_token_manager
 issue_tracker: https://github.com/4akloon/dart_token_manager/issues
+topics:
+  - authentication
+  - oauth
+  - jwt
+  - refresh-token
+  - token
 
 environment:
   sdk: ^3.10.0

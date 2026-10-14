@@ -1,9 +1,15 @@
 name: token_manager_dio
-description: Dio interceptor for token injection, refresh, and automatic retry.
+description: "Single-flight OAuth/JWT refresh for Dio: attaches the access token, refreshes once on 401 and replays the request."
 version: 0.2.0
-repository: https://github.com/4akloon/dart_token_manager
+repository: https://github.com/4akloon/dart_token_manager/tree/main/packages/token_manager_dio
 homepage: https://github.com/4akloon/dart_token_manager
 issue_tracker: https://github.com/4akloon/dart_token_manager/issues
+topics:
+  - dio
+  - authentication
+  - interceptor
+  - oauth
+  - refresh-token
 
 environment:
   sdk: ^3.10.0

@@ -30,6 +30,10 @@ dart pub publish --dry-run             # inside a publishable package
   (a `Client` wrapper).
 - `test/` mirrors `lib/src/`; shared fakes are in `test/helpers/`; the size
   limits are enforced by `test/quality/size_limits_test.dart`.
+- `packages/docs_check`: not published. Its tests check the pubspec metadata,
+  the README blocks, the recipe pages (their `<!-- include: path -->` code
+  blocks equal the files in `example/recipes/`), `docs/recipes.md`, `llms.txt`
+  and every link between them. Run `cd packages/docs_check && dart test`.
 
 ## Code rules
 

@@ -52,6 +52,10 @@ jobs:
       - name: Test token_manager_http
         working-directory: packages/token_manager_http
         run: dart test
+      - name: Test docs_check
+        if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
+        working-directory: packages/docs_check
+        run: dart test
       - name: Publish dry run token_manager
         if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
         working-directory: packages/token_manager

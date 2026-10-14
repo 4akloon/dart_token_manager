@@ -8,6 +8,7 @@ dev_dependencies:
   lints: ^6.1.0
 
 workspace:
+  - packages/docs_check
   - packages/token_manager
   - packages/token_manager_dio
   - packages/token_manager_gql
