@@ -1,72 +1,48 @@
-// Uses the deprecated token_manager API until this adapter is rewritten (plan 2).
-// ignore_for_file: deprecated_member_use
-
 import 'package:dio/dio.dart';
 import 'package:token_manager/token_manager.dart';
-import 'refresh_interceptor_delegate.dart';
 
-/// Dio interceptor that injects auth tokens and retries requests after refresh.
+import 'refresh_interceptor_delegate.dart';
+import 'request_marks.dart';
+
+/// Dio interceptor that attaches tokens and replays a request once after an
+/// auth failure.
 class RefreshInterceptor<T> extends Interceptor {
-  /// Creates an interceptor instance.
+  /// Creates an interceptor over [manager].
+  ///
+  /// A request that [delegate] reports as an auth failure is sent again once
+  /// through [dio] with the tokens [manager] returns. Pass the [Dio] the
+  /// interceptor is added to, so the replay keeps its adapter, its other
+  /// interceptors and its timeouts; the replay is marked and never loops.
+  /// Without [dio] a plain `Dio` sends the replay.
   RefreshInterceptor({
     required TokenManager<T> manager,
     required RefreshInterceptorDelegate<T> delegate,
     Dio? dio,
   }) : _manager = manager,
-       _dio = dio ?? Dio(),
-       _delegate = delegate;
+       _delegate = delegate,
+       _dio = dio ?? Dio();
 
   final TokenManager<T> _manager;
-  final Dio _dio;
   final RefreshInterceptorDelegate<T> _delegate;
+  final Dio _dio;
+  final RequestMarks<T> _marks = RequestMarks<T>();
 
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    await _manager.waitForFresh;
-
-    final tokens = _manager.tokens;
-
-    _delegate.applyTokensToRequest(options, tokens);
-
-    options.extra['_auth_tokens'] = tokens;
-
-    handler.next(options);
-  }
-
-  @override
-  Future<void> onResponse(
-    Response response,
-    ResponseInterceptorHandler handler,
-  ) async {
-    if (_delegate.shouldRefresh(response)) {
-      final requestTokens = response.requestOptions.extra['_auth_tokens'];
-
-      final tokens = _manager.tokens;
-
-      if (tokens == null) {
-        handler.reject(DioException(requestOptions: response.requestOptions));
-        return;
-      }
-
-      if (requestTokens == tokens) {
-        await _manager.executeRefresh();
-      }
-
-      try {
-        final newResponse = await _makeNewRequest(
-          response.requestOptions,
-          _manager.tokens,
-        );
-
-        handler.resolve(newResponse);
-      } on DioException catch (e) {
-        handler.reject(e);
-      }
-    } else {
-      handler.next(response);
+    if (_marks.isReplay(options)) {
+      handler.next(options);
+      return;
+    }
+    try {
+      final tokens = await _manager.validToken();
+      _delegate.applyTokensToRequest(options, tokens);
+      _marks.recordTokens(options, tokens);
+      handler.next(options);
+    } on Exception catch (error, stackTrace) {
+      handler.reject(_failure(options, error, stackTrace), true);
     }
   }
 
@@ -75,73 +51,68 @@ class RefreshInterceptor<T> extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (_delegate.shouldRefresh(err.response)) {
-      final requestTokens = err.requestOptions.extra['_auth_tokens'];
-
-      final tokens = _manager.tokens;
-
-      if (tokens == null) {
-        handler.next(err);
-        return;
-      }
-
-      if (requestTokens == tokens) {
-        await _manager.executeRefresh();
-      }
-
-      final newTokens = _manager.tokens;
-
-      if (newTokens == null) {
-        handler.next(err);
-        return;
-      }
-
-      try {
-        final response = await _makeNewRequest(err.requestOptions, newTokens);
-
-        handler.resolve(response);
-      } on DioException catch (e) {
-        handler.next(e);
-      }
-    } else {
+    if (!_delegate.shouldRefresh(err.response)) {
       handler.next(err);
+      return;
+    }
+    try {
+      final replayed = await _replay(err.requestOptions, err.response);
+      if (replayed == null) {
+        handler.next(err);
+      } else {
+        handler.resolve(replayed);
+      }
+    } on DioException catch (error) {
+      handler.next(error);
     }
   }
 
-  Future<Response<dynamic>> _makeNewRequest(
+  /// Sends [options] again with new tokens; `null` means the failure passes on.
+  ///
+  /// Throws a [DioException] when the tokens cannot be renewed or the replay
+  /// fails.
+  Future<Response<Object?>?> _replay(
     RequestOptions options,
-    T? tokens,
+    Response<Object?>? rejected,
   ) async {
-    _dio.options.baseUrl = options.baseUrl;
+    final used = _marks.tokensOf(options);
+    if (used == null ||
+        _marks.isReplay(options) ||
+        !_marks.canReplay(options)) {
+      return null;
+    }
+    try {
+      final renewed = await _manager.validToken(rejected: used);
+      if (identical(renewed, used)) {
+        return null;
+      }
+      return await _send(_marks.replayOf(options, renewed), renewed);
+    } on DioException {
+      rethrow;
+    } on Exception catch (error, stackTrace) {
+      throw _failure(options, error, stackTrace, response: rejected);
+    }
+  }
 
+  Future<Response<Object?>> _send(RequestOptions options, T tokens) async {
     _delegate.applyTokensToRequest(options, tokens);
+    // No type argument on purpose: `fetch<Object?>` would reset the response
+    // type of the request to JSON, `fetch` infers `dynamic` and leaves it.
+    final response = await _dio.fetch(options);
+    return response;
+  }
 
-    return _dio.request(
-      options.path,
-      cancelToken: options.cancelToken,
-      data: switch (options.data) {
-        FormData(:final clone) => clone(),
-        final data => data,
-      },
-      onReceiveProgress: options.onReceiveProgress,
-      onSendProgress: options.onSendProgress,
-      queryParameters: options.queryParameters,
-      options: Options(
-        method: options.method,
-        sendTimeout: options.sendTimeout,
-        receiveTimeout: options.receiveTimeout,
-        extra: options.extra,
-        headers: options.headers,
-        responseType: options.responseType,
-        contentType: options.contentType,
-        validateStatus: options.validateStatus,
-        receiveDataWhenStatusError: options.receiveDataWhenStatusError,
-        followRedirects: options.followRedirects,
-        maxRedirects: options.maxRedirects,
-        requestEncoder: options.requestEncoder,
-        responseDecoder: options.responseDecoder,
-        listFormat: options.listFormat,
-      ),
+  DioException _failure(
+    RequestOptions options,
+    Object error,
+    StackTrace stackTrace, {
+    Response<Object?>? response,
+  }) {
+    return DioException(
+      requestOptions: options,
+      response: response,
+      error: error,
+      stackTrace: stackTrace,
     );
   }
 }
