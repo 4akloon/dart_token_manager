@@ -21,7 +21,7 @@ final class GrpcFixture {
       store: InMemoryTokenStore<String>(signedIn ? 't0' : null),
       refresher: refresher,
     );
-    final interceptor = RefreshInterceptor<String>(
+    final interceptor = GrpcTokenInterceptor<String>(
       manager: manager,
       delegate: delegate,
     );
@@ -45,7 +45,7 @@ final class GrpcFixture {
   final TokenManager<String> manager;
 
   /// The interceptor under test.
-  final RefreshInterceptor<String> interceptor;
+  final GrpcTokenInterceptor<String> interceptor;
 
   /// Lets every pending microtask and zero-delay timer run.
   static Future<void> settle() => Future<void>.delayed(Duration.zero);

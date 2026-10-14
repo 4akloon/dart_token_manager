@@ -47,8 +47,8 @@ Adapters:
   forwarded; `shouldRefresh` in the delegate is never called;
   `AsyncResponseStream` ignores pause and resume; errors on the `headers` and
   `trailers` futures can surface as uncaught zone errors.
-- Both adapter packages export `RefreshInterceptor` and `RefreshInterceptorDelegate`,
-  which clash when used together.
+- Both adapter packages exported `RefreshInterceptor` and `RefreshInterceptorDelegate`,
+  which clashed when used together (since renamed to `DioTokenInterceptor` and `GrpcTokenInterceptor`).
 
 Packaging and process:
 

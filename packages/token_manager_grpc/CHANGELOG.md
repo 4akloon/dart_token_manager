@@ -1,7 +1,9 @@
 ## 0.2.0 - Unreleased
 
 ### Changed
-- Requires `token_manager` ^0.2.0. `RefreshInterceptor` sends unary calls
+- Renamed `RefreshInterceptor` to `GrpcTokenInterceptor`; the old name is a
+  deprecated subclass.
+- Requires `token_manager` ^0.2.0. `GrpcTokenInterceptor` sends unary calls
   through `TokenManager.authorize` and streaming calls through
   `TokenManager.authorizeStream`.
 - `RefreshInterceptorDelegate.shouldRefresh` is now called: it decides which

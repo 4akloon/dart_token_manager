@@ -56,7 +56,7 @@ Future<void> main() async {
   final client = grpc.Client(
     channel,
     interceptors: [
-      RefreshInterceptor<TokenSet>(
+      GrpcTokenInterceptor<TokenSet>(
         manager: manager,
         delegate: const _BearerDelegate(),
       ),

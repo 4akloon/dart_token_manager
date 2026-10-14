@@ -41,7 +41,7 @@ final manager = TokenManager<TokenSet>.create(
 final client = GreeterClient( // your generated client
   channel,
   interceptors: [
-    RefreshInterceptor<TokenSet>(
+    GrpcTokenInterceptor<TokenSet>(
       manager: manager,
       delegate: const BearerDelegate(),
     ),
