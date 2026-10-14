@@ -36,6 +36,7 @@ void main() {
 
     expect(events, [second]);
     expect(fixture.terminal.requests, hasLength(2));
+    expect(fixture.refresher.calls, 1);
   });
 
   test('without a refresher the UNAUTHENTICATED response is delivered as '
@@ -56,6 +57,23 @@ void main() {
     final events = await fixture.send(fixture.query());
 
     expect(events, [forbidden]);
+    expect(fixture.refresher.calls, 0);
+  });
+
+  test('an UNAUTHENTICATED response after a first response is delivered '
+      'unreplayed', () async {
+    const first = LinkFixture.ok;
+    final late = LinkFixture.rejected();
+    final fixture = LinkFixture(
+      outcomes: [
+        [first, late],
+      ],
+    );
+
+    final events = await fixture.send(fixture.query());
+
+    expect(events, [first, late]);
+    expect(fixture.terminal.requests, hasLength(1));
     expect(fixture.refresher.calls, 0);
   });
 }

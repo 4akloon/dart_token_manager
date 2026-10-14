@@ -7,7 +7,8 @@ import 'package:gql_link/gql_link.dart';
 /// records what it was sent.
 final class FakeTerminalLink extends Link {
   /// Answers request number `i` with `outcomes[i]`: a [Response] is emitted
-  /// as an event, anything else as an error event, and the stream then ends.
+  /// as an event, a [List] emits each of its items in that way, anything else
+  /// is emitted as an error event, and the stream then ends.
   /// A request past the script gets a stream that stays open.
   FakeTerminalLink([this._outcomes = const []]);
 
@@ -26,15 +27,22 @@ final class FakeTerminalLink extends Link {
     final controller = StreamController<Response>();
     controllers.add(controller);
     if (index < _outcomes.length) {
-      switch (_outcomes[index]) {
-        case final Response response:
-          controller.add(response);
-        case final Object error:
-          controller.addError(error);
+      final outcome = _outcomes[index];
+      for (final event in outcome is List<Object> ? outcome : [outcome]) {
+        _emit(controller, event);
       }
       unawaited(controller.close());
     }
     return controller.stream;
+  }
+
+  void _emit(StreamController<Response> controller, Object event) {
+    switch (event) {
+      case final Response response:
+        controller.add(response);
+      case final Object error:
+        controller.addError(error);
+    }
   }
 
   /// The `Authorization` header of request number [index], if any.
