@@ -200,7 +200,7 @@ exactly once.
   is returned. No `baseUrl` mutation.
 - **package:http** (`HttpTokenClient<T> extends BaseClient`): wraps an inner
   `Client`. Replay works for `Request`; `StreamedRequest` and multipart bodies
-  that cannot be recreated return the error without replay.
+  that cannot be recreated return the rejected response without replay.
 - **Streams** (gRPC responses): no `await for`. `RelayStream`
   creates a `StreamController` and manages the lifecycle:
   `onListen` obtains `validToken()` first, then opens the source and subscribes
