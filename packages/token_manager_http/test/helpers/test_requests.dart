@@ -14,6 +14,12 @@ final class TestRequests {
   /// An answer callback that always says 200.
   static FakeAnswer alwaysOk(SentRequest request) => FakeAnswer.ok;
 
+  /// An answer callback that says 403 to the `old` tokens and 200 otherwise.
+  static FakeAnswer forbidOld(SentRequest request) =>
+      request.authorization == 'Bearer old'
+      ? const FakeAnswer(403, 'forbidden')
+      : FakeAnswer.ok;
+
   /// A POST [StreamedRequest] to [ClientFixture.url] whose body is [body].
   static StreamedRequest streamed(String body) {
     final request = StreamedRequest('POST', ClientFixture.url);

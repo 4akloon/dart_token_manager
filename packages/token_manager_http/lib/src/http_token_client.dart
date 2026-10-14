@@ -3,15 +3,22 @@ import 'dart:async';
 import 'package:http/http.dart';
 import 'package:token_manager/token_manager.dart';
 
+import 'rejected_response.dart';
 import 'request_copies.dart';
 
 /// An `http` [Client] that sends requests with the tokens of a
-/// [TokenManager].
+/// [TokenManager] and replays a request once after the server rejects them.
 ///
 /// The client never refreshes by itself: it asks the manager for valid
-/// tokens before every request and reports the tokens a server rejected, so
-/// concurrent requests share one refresh. Every request is sent as a copy,
-/// so the caller's request never gets the token header.
+/// tokens before every request and reports the tokens a server rejected
+/// through [TokenManager.authorize], so concurrent requests share one
+/// refresh. Every attempt sends a copy, so the caller's request never gets
+/// the token header.
+///
+/// Only a [Request] or an [AbortableRequest] is replayed, because its body is
+/// in memory; the rejected body is read first so its connection is released.
+/// A [StreamedRequest], a [MultipartRequest] and any other request are sent
+/// once, and their rejection is returned as is.
 ///
 /// ```dart
 /// final client = HttpTokenClient<TokenSet>(manager: manager, inner: Client());
@@ -60,36 +67,57 @@ final class HttpTokenClient<T> extends BaseClient {
   final bool Function(BaseResponse response) _isAuthFailure;
   final bool Function(BaseRequest request) _shouldAuthorize;
 
-  /// Sends [request] with valid tokens.
+  /// Sends [request] with valid tokens, replaying a rejected [Request] once.
   ///
   /// Throws `NotAuthenticated`, `InvalidGrant` or `Transient` when the
-  /// manager has no tokens to send; the request is then not sent.
+  /// manager has no tokens to send.
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     if (!_shouldAuthorize(request)) {
       return _inner.send(request);
     }
-    return _sendOnce(request);
+    return switch (_copies.asReplayable(request)) {
+      final Request replayable => _sendReplayable(replayable),
+      null => _sendOnce(request),
+    };
+  }
+
+  /// Sends [request] through [TokenManager.authorize], which replays it once
+  /// after a rejection; a rejection that is not replayed is returned.
+  Future<StreamedResponse> _sendReplayable(Request request) async {
+    try {
+      return await _manager.authorize<StreamedResponse>(
+        (tokens) => _attempt(request, tokens),
+        isAuthFailure: RejectedResponse.matches,
+      );
+    } on RejectedResponse catch (rejection) {
+      return rejection.toResponse();
+    }
+  }
+
+  /// Sends a copy of [request] with [tokens]; a rejected response is read to
+  /// the end and thrown as a [RejectedResponse].
+  Future<StreamedResponse> _attempt(Request request, T tokens) async {
+    final response = await _inner.send(
+      _copies.copyOf(request, _headers(tokens)),
+    );
+    if (!_isAuthFailure(response)) {
+      return response;
+    }
+    throw await RejectedResponse.read(response);
   }
 
   /// Sends [request] a single time; a rejection is returned as is and its
   /// tokens are reported, so the next request gets new ones.
   Future<StreamedResponse> _sendOnce(BaseRequest request) async {
     final tokens = await _manager.validToken();
-    final response = await _inner.send(_authorized(request, tokens));
+    final response = await _inner.send(
+      _copies.streamOf(request, _headers(tokens)),
+    );
     if (_isAuthFailure(response)) {
       unawaited(_reportRejected(tokens));
     }
     return response;
-  }
-
-  /// Returns the copy of [request] that carries the headers of [tokens].
-  BaseRequest _authorized(BaseRequest request, T tokens) {
-    final headers = _headers(tokens);
-    return switch (_copies.asReplayable(request)) {
-      final Request replayable => _copies.copyOf(replayable, headers),
-      null => _copies.streamOf(request, headers),
-    };
   }
 
   /// Asks the manager to renew [rejected] and ignores the outcome, because

@@ -14,3 +14,7 @@ Initial release of the `package:http` adapter for token_manager.
   (`isAuthFailure`, status 401 by default) the response is returned as is and
   the rejected tokens are reported to the manager, so the next request gets
   new ones.
+- A `Request` or `AbortableRequest` that the server rejects is sent once more
+  with the tokens `TokenManager.authorize` provides; concurrent rejections
+  share one refresh. The rejected body is read first so its connection is
+  released, and a rejection that is not replayed is returned with its body.
