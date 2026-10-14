@@ -75,8 +75,9 @@ final class AuthorizedHttp {
     final client = HttpTokenClient<TokenSet>(
       manager: manager,
       inner: transport,
-      // The sign-in and the refresh run before tokens exist or while the
-      // manager is refreshing: they must not ask it for tokens.
+      // The sign-in runs before tokens exist, so it must not ask for them.
+      // The refresh never reaches this client: HttpRefresher uses the plain
+      // transport.
       shouldAuthorize: (request) => request.url.path != _tokenPath,
     );
     return AuthorizedHttp._(manager, client, tokenUri);

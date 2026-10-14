@@ -7,8 +7,9 @@ against `package:http`.
 ## The code
 
 `AuthorizedHttp` builds the manager and an `HttpTokenClient` over one
-`transport`. The refresher and the sign-in use the token endpoint, which
-`shouldAuthorize` excludes. `StandInServer` is a `MockClient` that replaces
+`transport`. `shouldAuthorize` excludes the sign-in from tokens, and
+`HttpRefresher` refreshes through the plain `transport`, so the refresh never
+passes through the client. `StandInServer` is a `MockClient` that replaces
 your server.
 
 <!-- include: example/recipes/authorized_client.dart -->
@@ -90,8 +91,9 @@ final class AuthorizedHttp {
     final client = HttpTokenClient<TokenSet>(
       manager: manager,
       inner: transport,
-      // The sign-in and the refresh run before tokens exist or while the
-      // manager is refreshing: they must not ask it for tokens.
+      // The sign-in runs before tokens exist, so it must not ask for them.
+      // The refresh never reaches this client: HttpRefresher uses the plain
+      // transport.
       shouldAuthorize: (request) => request.url.path != _tokenPath,
     );
     return AuthorizedHttp._(manager, client, tokenUri);
@@ -216,8 +218,10 @@ Run it with `dart run example/recipes/authorized_client.dart`. The test
 - A signed-in call carries `Authorization: Bearer <accessToken>`.
 - A call the server rejects is refreshed once and sent again once; parallel
   rejected calls share one refresh.
-- The sign-in and the refresh reach the token endpoint without a token,
-  because `shouldAuthorize` returns `false` for it.
+- The sign-in reaches the token endpoint without a token, because
+  `shouldAuthorize` returns `false` for it.
+- The refresh carries no token, because `HttpRefresher` uses the plain
+  `transport` instead of the authorized client.
 - A call while signed out fails with `NotAuthenticated` and sends nothing.
 - A call after `close()` fails with a `ClientException`.
 

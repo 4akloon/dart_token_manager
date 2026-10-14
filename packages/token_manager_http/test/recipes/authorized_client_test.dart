@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:http/http.dart';
 import 'package:test/test.dart';
 import 'package:token_manager/token_manager.dart';
 import 'package:token_manager_http/token_manager_http.dart';
 
 import '../../example/recipes/authorized_client.dart'
-    show AuthorizedHttp, StandInServer;
+    show AuthorizedHttp, HttpRefresher, StandInServer;
 
 /// A refresher the tests never reach.
 final class _UnusedRefresher implements TokenRefresher<String> {
@@ -76,14 +78,37 @@ void main() {
     expect(server.refreshes, 1);
   });
 
-  test('the refresh reaches the token endpoint without a token', () async {
-    await http.signIn('ada@example.com', 'secret');
-    server.revokeAccessToken();
+  test(
+    'the refresh carries no token because it uses the plain transport',
+    () async {
+      // No shouldAuthorize here: only the plain transport keeps the token off.
+      final manager = TokenManager<TokenSet>.create(
+        store: InMemoryTokenStore<TokenSet>(),
+        refresher: HttpRefresher(
+          client: server.client,
+          endpoint: Uri.parse('https://api.test/oauth/token'),
+        ),
+        info: const TokenSetInfo(),
+      );
+      addTearDown(manager.dispose);
+      await manager.setTokens(
+        TokenSet(
+          accessToken: 'access-1',
+          refreshToken: 'refresh-1',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        ),
+      );
+      server.revokeAccessToken();
 
-    await http.client.get(me);
+      await HttpTokenClient<TokenSet>(
+        manager: manager,
+        inner: server.client,
+      ).get(me);
 
-    expect(server.tokenEndpointHeaders, [null, null]);
-  });
+      expect(server.refreshes, 1);
+      expect(server.tokenEndpointHeaders, [null]);
+    },
+  );
 
   test('a call while signed out fails with NotAuthenticated', () async {
     await expectLater(
@@ -101,12 +126,34 @@ void main() {
     await expectLater(http.client.get(me), throwsA(isA<ClientException>()));
   });
 
-  test('close leaves the manager open', () async {
-    await http.signIn('ada@example.com', 'secret');
+  test('close leaves the manager open until it is disposed', () async {
+    var isDone = false;
+    final subscription = http.manager.states.listen(
+      (_) {},
+      onDone: () => isDone = true,
+    );
+    addTearDown(subscription.cancel);
 
     http.client.close();
+    await pumpEventQueue();
+    final doneAfterClose = isDone;
+    await http.manager.dispose();
+    await pumpEventQueue();
 
-    expect((await http.manager.current())?.accessToken, 'access-1');
+    expect(doneAfterClose, isFalse);
+    expect(isDone, isTrue);
+  });
+
+  test('an abortable request is refreshed and replayed once', () async {
+    await http.signIn('ada@example.com', 'secret');
+    server.revokeAccessToken();
+
+    final streamed = await http.client.send(
+      AbortableRequest('GET', me, abortTrigger: Completer<void>().future),
+    );
+
+    expect(streamed.statusCode, 200);
+    expect(server.received, ['Bearer access-1', 'Bearer access-2']);
   });
 
   test('without shouldAuthorize a login while signed out fails with '
