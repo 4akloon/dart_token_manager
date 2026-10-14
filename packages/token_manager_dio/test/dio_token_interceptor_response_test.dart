@@ -10,8 +10,8 @@ final class _NeverRefreshDelegate extends RefreshInterceptorDelegate<TokenSet> {
   const _NeverRefreshDelegate();
 
   @override
-  void applyTokensToRequest(RequestOptions options, TokenSet? tokens) {
-    options.headers['Authorization'] = 'Bearer ${tokens?.accessToken}';
+  void applyTo(RequestOptions options, TokenSet tokens) {
+    options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
   }
 
   @override

@@ -247,7 +247,7 @@ The old packages ship the new API together with a deprecated facade.
 | `RevokedTokensException` | `@Deprecated`; mapped to `InvalidGrant`; other exceptions map to `Transient` |
 | `RefreshInterceptor<T>` (dio) | `@Deprecated` subclass of `DioTokenInterceptor<T>` (plan 2) |
 | `RefreshInterceptor<T>` (grpc) | `@Deprecated` subclass of `GrpcTokenInterceptor<T>` (plan 2) |
-| `applyTokensToRequest` | `applyTo` (plan 2) |
+| `applyTokensToRequest` | `applyTo` (plan 2, dio: done; the default `applyTo` calls the deprecated old method, neither overridden throws `StateError`) |
 
 Behaviour changes that the facade cannot hide, recorded in `CHANGELOG.md` and
 `doc/migration.md`: `refreshDelay` is ignored (no retry timer);

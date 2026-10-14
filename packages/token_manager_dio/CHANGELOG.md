@@ -8,9 +8,15 @@
   after `validToken(rejected: ...)`. The constructor and
   `RefreshInterceptorDelegate<T>` (`applyTokensToRequest`, `shouldRefresh`) are
   source compatible with 0.1.
+- `RefreshInterceptorDelegate<T>.applyTo(options, tokens)` replaces
+  `applyTokensToRequest` (`tokens` is non-null). Both methods are now concrete:
+  the default `applyTo` calls the deprecated `applyTokensToRequest`, so a 0.1
+  delegate that overrides only `applyTokensToRequest` compiles and works
+  unchanged (with a deprecation warning), and a new one overrides only
+  `applyTo`. A delegate that overrides neither fails with a `StateError`
+  instead of recursing. This keeps one class and no adapter in the interceptor.
 - Requires `token_manager` 0.2.0 and no longer uses its deprecated API
   (`tokens`, `waitForFresh`, `executeRefresh`, `initialize`).
-- `applyTokensToRequest` now always receives non-null tokens.
 - The replay is sent with `Dio.fetch` on a copy of the request: the `Dio` given
   as `dio` keeps its `baseUrl` (0.1 overwrote it), the response type of the
   request is kept, and a `FormData` body is cloned.

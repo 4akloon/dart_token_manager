@@ -6,10 +6,8 @@ final class _BearerDelegate extends RefreshInterceptorDelegate<TokenSet> {
   const _BearerDelegate();
 
   @override
-  void applyTokensToRequest(RequestOptions options, TokenSet? tokens) {
-    if (tokens != null) {
-      options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
-    }
+  void applyTo(RequestOptions options, TokenSet tokens) {
+    options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
   }
 }
 

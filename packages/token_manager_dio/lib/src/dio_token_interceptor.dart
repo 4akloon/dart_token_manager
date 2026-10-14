@@ -38,7 +38,7 @@ class DioTokenInterceptor<T> extends Interceptor {
     }
     try {
       final tokens = await _manager.validToken();
-      _delegate.applyTokensToRequest(options, tokens);
+      _delegate.applyTo(options, tokens);
       _marks.recordTokens(options, tokens);
       handler.next(options);
     } on Exception catch (error, stackTrace) {
@@ -121,7 +121,7 @@ class DioTokenInterceptor<T> extends Interceptor {
   }
 
   Future<Response<Object?>> _send(RequestOptions options, T tokens) async {
-    _delegate.applyTokensToRequest(options, tokens);
+    _delegate.applyTo(options, tokens);
     // No type argument on purpose: `fetch<Object?>` would reset the response
     // type of the request to JSON, `fetch` infers `dynamic` and leaves it.
     final response = await _dio.fetch(options);
