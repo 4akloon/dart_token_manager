@@ -39,8 +39,7 @@ typedef SocketLinkBuilder =
 
 /// Refreshes with a mutation sent through [_link], the HTTP link alone.
 ///
-/// The link must not contain a [TokenManagerLink]: the refresh runs while the
-/// manager waits for it.
+/// The link must not contain a [TokenManagerLink].
 final class MutationRefresher implements TokenRefresher<TokenSet> {
   /// Creates a refresher that sends the refresh mutation through [_link].
   const MutationRefresher(this._link);
@@ -177,14 +176,12 @@ final class StandInServer extends Link {
   final List<String?> received = [];
 
   String _valid = 'access-1';
-  bool _rejectAll = false;
 
   /// Makes the access token in use stale, like an early revocation.
   void revokeAccessToken() => _valid = 'revoked';
 
-  /// Makes the server reject every `Me` query, whatever its token.
-  // ignore: unreachable_from_main, only the test of this recipe calls it.
-  void rejectEveryToken() => _rejectAll = true;
+  /// Whether the server rejects every `Me` query, whatever its token.
+  bool rejectsEveryToken = false;
 
   @override
   Stream<Response> request(Request request, [NextLink? forward]) {
@@ -219,7 +216,7 @@ final class StandInServer extends Link {
 
   Stream<Response> _me(String? authorization) {
     received.add(authorization);
-    if (_rejectAll || authorization != 'Bearer $_valid') {
+    if (rejectsEveryToken || authorization != 'Bearer $_valid') {
       return Stream.error(const ServerException(statusCode: 401));
     }
     return Stream.value(const Response(data: {'me': 'ada'}, response: {}));
@@ -256,7 +253,7 @@ Future<void> main() async {
 ```
 
 Run it with `dart run example/recipes/queries_and_subscriptions.dart`. The test
-`test/recipes/queries_and_subscriptions_test.dart` checks every behaviour below.
+`test/recipes/queries_and_subscriptions_test.dart` checks every behaviour under What you get.
 
 ## What you get
 
@@ -277,8 +274,10 @@ Run it with `dart run example/recipes/queries_and_subscriptions.dart`. The test
 
 - **Putting `TokenManagerLink` after the terminating link.** It must come before
   it, after `DedupeLink` when you use one.
-- **Combining it with the client's own auth link.** graphql_flutter's
-  `AuthLink` sets the same header and cannot replay; use one of the two.
+- **Combining it with the client's own auth link.** The client's
+  own auth link sets the same header and cannot replay; use one of the two, as
+  the [Clients guide](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_gql/doc/clients.md)
+  explains.
 - **Refreshing through the full link.** `MutationRefresher` sends its mutation
   through `httpLink` alone; give it a link that has no `TokenManagerLink`.
 - **Logging in without `SkipAuthorization`.** A login runs before tokens exist;

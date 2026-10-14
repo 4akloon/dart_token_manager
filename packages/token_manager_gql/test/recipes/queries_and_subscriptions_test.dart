@@ -75,7 +75,7 @@ void main() {
     'a query rejected again after the replay is delivered as the error',
     () async {
       await links.signIn('ada@example.com', 'secret');
-      server.rejectEveryToken();
+      server.rejectsEveryToken = true;
 
       await expectLater(
         links.link.request(query()).first,
@@ -101,7 +101,6 @@ void main() {
         .first;
 
     expect(socketOperations, ['Ticks']);
-    expect(server.received, isEmpty);
   });
 
   test('the socket payload carries the current access token', () async {

@@ -22,8 +22,7 @@ typedef SocketLinkBuilder =
 
 /// Refreshes with a mutation sent through [_link], the HTTP link alone.
 ///
-/// The link must not contain a [TokenManagerLink]: the refresh runs while the
-/// manager waits for it.
+/// The link must not contain a [TokenManagerLink].
 final class MutationRefresher implements TokenRefresher<TokenSet> {
   /// Creates a refresher that sends the refresh mutation through [_link].
   const MutationRefresher(this._link);
@@ -160,14 +159,12 @@ final class StandInServer extends Link {
   final List<String?> received = [];
 
   String _valid = 'access-1';
-  bool _rejectAll = false;
 
   /// Makes the access token in use stale, like an early revocation.
   void revokeAccessToken() => _valid = 'revoked';
 
-  /// Makes the server reject every `Me` query, whatever its token.
-  // ignore: unreachable_from_main, only the test of this recipe calls it.
-  void rejectEveryToken() => _rejectAll = true;
+  /// Whether the server rejects every `Me` query, whatever its token.
+  bool rejectsEveryToken = false;
 
   @override
   Stream<Response> request(Request request, [NextLink? forward]) {
@@ -202,7 +199,7 @@ final class StandInServer extends Link {
 
   Stream<Response> _me(String? authorization) {
     received.add(authorization);
-    if (_rejectAll || authorization != 'Bearer $_valid') {
+    if (rejectsEveryToken || authorization != 'Bearer $_valid') {
       return Stream.error(const ServerException(statusCode: 401));
     }
     return Stream.value(const Response(data: {'me': 'ada'}, response: {}));
