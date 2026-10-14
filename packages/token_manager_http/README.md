@@ -51,7 +51,7 @@ Future<String> fetchProfile(TokenManager<TokenSet> manager) async {
 
 The client never refreshes by itself: it asks the manager for valid tokens (which refreshes them first when
 they are about to expire) and reports the tokens a server rejected. Concurrent requests share one refresh.
-Every request is sent as a copy, so your request object never gets the token header. A runnable version
+Every authorized request is sent as a copy, so your request object never gets the token header. A runnable version
 without a network is in [example/main.dart](example/main.dart).
 
 **[doc/getting_started.md](doc/getting_started.md)**
@@ -110,7 +110,7 @@ The token header replaces a header with the same name on the request, in any let
 
 | Thrown by `send`, `get`, ... | Meaning |
 |---|---|
-| `NotAuthenticated` | no session; the request was not sent |
+| `NotAuthenticated` | no session; nothing more is sent |
 | `InvalidGrant` | the session ended and the manager signed out |
 | `Transient` | the refresh may succeed later; the session stays |
 | `ClientException` | a network error, or a request after `close()` |

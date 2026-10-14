@@ -20,6 +20,8 @@ not copy it.
   replay is sent, so its connection is released. If no replay follows (the
   manager has no replacement token, or the replay is rejected too) you get
   the rejected response, with its body.
+  If the refresh fails, its `InvalidGrant` or `Transient` is thrown instead
+  of the 401.
 - **Request that is sent once**: the rejected response is returned untouched.
   The client reports the rejected tokens to the manager without waiting, so
   the next request gets new ones. Resend the request yourself if that is
@@ -57,7 +59,7 @@ allowed, and a refresh does not change that.
 
 | Thrown by `send`, `get`, ... | Meaning |
 |---|---|
-| `NotAuthenticated` | no session; the request was not sent |
+| `NotAuthenticated` | no session; nothing more is sent |
 | `InvalidGrant` | the refresh token is dead and the manager signed out |
 | `Transient` | the refresh may succeed later; the session stays |
 | `ClientException` | a network error, or a request after `close()` |

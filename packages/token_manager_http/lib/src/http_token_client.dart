@@ -12,8 +12,8 @@ import 'request_copies.dart';
 /// The client never refreshes by itself: it asks the manager for valid
 /// tokens before every request and reports the tokens a server rejected
 /// through [TokenManager.authorize], so concurrent requests share one
-/// refresh. Every attempt sends a copy, so the caller's request never gets
-/// the token header.
+/// refresh. Every authorized request is sent as a copy, so the caller's
+/// request never gets the token header.
 ///
 /// Only a [Request] or an [AbortableRequest] is replayed, because its body is
 /// in memory; the rejected body is read first so its connection is released.

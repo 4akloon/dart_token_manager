@@ -46,8 +46,8 @@ final class RequestCopies {
   /// Returns a request that streams the body of [original] with [headers]
   /// added.
   ///
-  /// [original] is finalized, as sending it would, but its headers are left
-  /// unchanged. An abort trigger is kept.
+  /// [original] is finalized, as sending it would, but the token header is
+  /// never added to it. An abort trigger is kept.
   StreamedRequest streamOf(BaseRequest original, Map<String, String> headers) {
     // Finalize first: a MultipartRequest sets its content type there.
     final body = original.finalize();
