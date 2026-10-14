@@ -6,22 +6,25 @@ publishing. There are no secrets. The workflow is
 pushed. CI also runs `dart pub publish --dry-run` for every package.
 
 > **Status:** `token_manager`, `token_manager_dio` and `token_manager_grpc` 0.1.x
-> are on pub.dev; 0.2.0 of these three and `token_manager_gql` 0.1.0 are the
-> pending release. `token_manager_gql` does not exist on pub.dev yet.
+> are on pub.dev; 0.2.0 of these three, `token_manager_gql` 0.1.0 and
+> `token_manager_http` 0.1.0 are the pending release. `token_manager_gql` and
+> `token_manager_http` do not exist on pub.dev yet.
 
 ## One-time setup
 
 For each package (`token_manager`, `token_manager_dio`, `token_manager_grpc`,
-`token_manager_gql`):
+`token_manager_gql`, `token_manager_http`):
 
 1. The package must already exist on pub.dev. Only a brand-new package
-   (`token_manager_gql` now, `token_manager_http` later) needs a manual first
-   publish: run `dart pub publish` from `packages/<package>`. The other
-   packages are already on pub.dev.
+   (`token_manager_gql` and `token_manager_http` now) needs a manual first
+   publish: once the core version it depends on is live, run
+   `dart pub publish` from `packages/<package>`. The other packages are
+   already on pub.dev.
 2. On pub.dev open the package, then Admin, then Automated publishing, and
    enable GitHub Actions publishing:
    - Repository: `4akloon/dart_token_manager`
-   - Tag pattern: `<package>-v{{version}}`
+   - Tag pattern: `<package>-v{{version}}`, for example
+     `token_manager_http-v{{version}}`
    - Require GitHub Actions environment: `pub.dev`
 
 In the GitHub repository, create the environment `pub.dev` (Settings, then
@@ -46,6 +49,9 @@ approval.
 
 ## Order
 
-Release **`token_manager`** (the core) first. The adapters depend on it with a
-`^0.2.0` style constraint that resolves from pub.dev, so a new adapter release
-that needs a new core version can only be published after the core is live.
+Release **`token_manager`** (the core) first. The adapters
+(`token_manager_dio`, `token_manager_grpc`, `token_manager_gql`,
+`token_manager_http`) depend on it with a `^0.2.0` style constraint that
+resolves from pub.dev, so a new adapter release that needs a new core version
+can only be published after the core is live. The adapters do not depend on
+each other and can follow in any order.

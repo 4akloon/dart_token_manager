@@ -49,6 +49,9 @@ jobs:
       - name: Test token_manager_gql
         working-directory: packages/token_manager_gql
         run: dart test
+      - name: Test token_manager_http
+        working-directory: packages/token_manager_http
+        run: dart test
       - name: Publish dry run token_manager
         if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
         working-directory: packages/token_manager
@@ -64,4 +67,8 @@ jobs:
       - name: Publish dry run token_manager_gql
         if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
         working-directory: packages/token_manager_gql
+        run: dart pub publish --dry-run
+      - name: Publish dry run token_manager_http
+        if: matrix.sdk == 'stable' && matrix.os == 'ubuntu-latest'
+        working-directory: packages/token_manager_http
         run: dart pub publish --dry-run

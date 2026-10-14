@@ -2,12 +2,12 @@
 
 [![CI](https://github.com/4akloon/dart_token_manager/actions/workflows/ci.yml/badge.svg)](https://github.com/4akloon/dart_token_manager/actions/workflows/ci.yml)
 ![Dart](https://img.shields.io/badge/Dart-%3E%3D3.10-0175C2?logo=dart&logoColor=white)
-![Transports](https://img.shields.io/badge/transports-dio%20%7C%20gRPC%20%7C%20GraphQL-informational)
+![Transports](https://img.shields.io/badge/transports-dio%20%7C%20http%20%7C%20gRPC%20%7C%20GraphQL-informational)
 ![Status](https://img.shields.io/badge/status-0.2.0%20pending-orange)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
 
 **Client-side token lifecycle for Dart — storage, single-flight refresh, an observable session
-state, and thin transport adapters for dio, gRPC and GraphQL.**
+state, and thin transport adapters for dio, http, gRPC and GraphQL.**
 
 - 🔁 **Single-flight refresh** — concurrent callers share one in-flight refresh; a token the server rejected is refreshed only if nobody replaced it already.
 - 🧱 **Layered core** — `TokenManager<T>` composes a `TokenStore`, a `TokenRefresher` and a `TokenInfo`; pure Dart, no runtime dependencies, no knowledge of HTTP.
@@ -46,8 +46,9 @@ Future<void> main() async {
 ```
 
 > **Status: 0.2.0 release pending.** `token_manager`, `token_manager_dio` and `token_manager_grpc`
-> 0.1.x are on pub.dev; 0.2.0 of these three and the first release of `token_manager_gql` (0.1.0)
-> are not published yet. Until then use a path or git dependency for the new versions.
+> 0.1.x are on pub.dev; 0.2.0 of these three and the first releases of `token_manager_gql` and
+> `token_manager_http` (0.1.0) are not published yet. Until then use a path or git dependency for
+> the new versions.
 
 ---
 
@@ -83,7 +84,7 @@ This repo is a Dart **pub workspace** (monorepo). Dart SDK: `>=3.10.0 <4.0.0`.
 | [`token_manager_dio`](packages/token_manager_dio) | **dio** adapter (`^0.2.0`) — `DioTokenInterceptor`. |
 | [`token_manager_grpc`](packages/token_manager_grpc) | **gRPC** adapter (`^0.2.0`) — `GrpcTokenInterceptor`. |
 | [`token_manager_gql`](packages/token_manager_gql) | **GraphQL** adapter (`^0.1.0`) — `TokenManagerLink` for [`gql_link`](https://pub.dev/packages/gql_link) (`graphql`, `graphql_flutter`, `ferry`). |
-| `token_manager_http` | **Planned** — `HttpTokenClient` for [`package:http`](https://pub.dev/packages/http). |
+| [`token_manager_http`](packages/token_manager_http) | **package:http** adapter (`^0.1.0`) — `HttpTokenClient`, a `BaseClient` over any [`http`](https://pub.dev/packages/http) `Client`. |
 
 ## Install
 
@@ -92,7 +93,7 @@ Add the core and the adapter for your transport:
 ```yaml
 dependencies:
   token_manager: ^0.2.0
-  token_manager_dio: ^0.2.0    # or token_manager_grpc: ^0.2.0 / token_manager_gql: ^0.1.0
+  token_manager_dio: ^0.2.0    # or token_manager_http: ^0.1.0 / token_manager_grpc: ^0.2.0 / token_manager_gql: ^0.1.0
 ```
 
 > These are the versions current after the pending 0.2.0 release; they do not resolve on pub.dev yet.
@@ -170,7 +171,8 @@ dio.interceptors.add(
 );
 ```
 
-gRPC and GraphQL follow the same shape — see
+`package:http`, gRPC and GraphQL follow the same shape — see
+[`token_manager_http`](packages/token_manager_http/README.md),
 [`token_manager_grpc`](packages/token_manager_grpc/README.md) and
 [`token_manager_gql`](packages/token_manager_gql/README.md).
 
@@ -178,7 +180,7 @@ gRPC and GraphQL follow the same shape — see
 
 - **[Core README](packages/token_manager/README.md)** — concepts, failures, `authorize`.
 - **[Migrating from 0.1](packages/token_manager/doc/migration.md)** — the redesign of the core.
-- [dio](packages/token_manager_dio/README.md) · [gRPC](packages/token_manager_grpc/README.md) · [GraphQL](packages/token_manager_gql/README.md) — adapter guides.
+- [dio](packages/token_manager_dio/README.md) · [http](packages/token_manager_http/README.md) · [gRPC](packages/token_manager_grpc/README.md) · [GraphQL](packages/token_manager_gql/README.md) — adapter guides.
 - [Releasing](docs/releasing.md) — tags, OIDC publishing, release order.
 - [Design spec](docs/superpowers/specs/2026-10-14-token-manager-redesign-design.md) — the redesign.
 
