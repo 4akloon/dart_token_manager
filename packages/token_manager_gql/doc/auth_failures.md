@@ -63,19 +63,20 @@ final class AppAuthFailureMatcher extends AuthFailureMatcher {
 }
 ```
 
-## A 403 is not replayed by default
+## A 403 with `UNAUTHENTICATED` is replayed
 
 `HttpLink` throws an `HttpLinkServerException` for every HTTP status of 300 or
-more whose body parses as GraphQL JSON, even when that body carries
-`extensions.code: "UNAUTHENTICATED"`. Such a 403 has a status code that is not
-in the default `statusCodes` ({401}), so `isAuthError` is false, the request
-is not replayed and the exception reaches the client. The `UNAUTHENTICATED`
-code is only read from a `Response`, which `HttpLink` does not emit for a 403.
+more whose body parses as GraphQL JSON. By default the matcher treats such a
+403 as a rejection when its parsed response carries an `errorCodes` value
+(`UNAUTHENTICATED`) in `errors[].extensions.code`: the request is replayed once
+with refreshed tokens, through the same single-flight path as a 401. A 403
+without that code (for example `FORBIDDEN`) is a missing permission, not a
+rejected token, and is not replayed: the exception reaches the client.
+
 A 403 whose body is not GraphQL JSON (empty, HTML) arrives as an
-`HttpLinkParserException` instead, which `statusCodes` does not cover: the
-default matcher does not recognise it, so it is not replayed and reaches the
-client too, whatever `statusCodes` holds. To replay a 403 with a GraphQL JSON
-body, add it to `statusCodes`:
+`HttpLinkParserException`, which has no parsed response and which the default
+matcher does not recognise, so it is not replayed. To replay every 403, or
+another status, add it to `statusCodes`:
 
 ```dart
 import 'package:token_manager_gql/token_manager_gql.dart';
@@ -83,9 +84,9 @@ import 'package:token_manager_gql/token_manager_gql.dart';
 const matcher = AuthFailureMatcher(statusCodes: {401, 403});
 ```
 
-Many servers use 403 for a missing permission, not for a rejected token. Opt
-in only when yours sends 403 for rejected tokens: otherwise every forbidden
-request is replayed once after a pointless refresh.
+Many servers use 403 for a missing permission. Opt in to every 403 only when
+yours sends 403 for rejected tokens: otherwise every forbidden request is
+replayed once after a pointless refresh.
 
 ## Operations without tokens
 
@@ -107,17 +108,19 @@ sent while signed out fails with `NotAuthenticated`.
 
 ## Errors from the manager
 
-When the manager cannot supply tokens, `TokenManagerLink` neither throws from
-`request` nor wraps the failure in a `LinkException`: the stream returned by
-`request` emits the `RefreshFailure` or `NotAuthenticated` object itself as an
-error event, and the request is not sent.
+When the manager cannot supply tokens, `TokenManagerLink` does not throw from
+`request`: the stream returned by `request` emits a `LinkException` as an error
+event, and the request is not sent. Its `originalException` is the manager's
+failure, `originalStackTrace` is the stack trace it was thrown with, so
+GraphQL clients such as `graphql_flutter` and `ferry` map it to a link error.
 
 - `NotAuthenticated` — there is no session.
 - `InvalidGrant` — the refresh was refused, the session ended and the manager
   signed out. This also reaches the client when it happens during the replay.
 - `Transient` — the refresh may succeed later; the session stays.
 
-A client above the link may wrap what it receives in its own exception type;
-the link itself delivers the objects as they are.
+Read the failure with `(error as LinkException).originalException`. Other
+errors, such as a `ServerException` from the terminating link, are delivered as
+they are and never wrapped.
 
 Listen to `manager.states` to send the user to sign-in on `Unauthenticated`.

@@ -122,9 +122,9 @@ final class AppAuthFailureMatcher extends AuthFailureMatcher {
 }
 ```
 
-A response whose HTTP status is not in `statusCodes` (for example 403) is never replayed, even when its
-body carries the `UNAUTHENTICATED` code and arrives as a server exception; override `isAuthError` for a
-server that answers that way.
+A 403 whose parsed body carries the `UNAUTHENTICATED` code (a server exception) is replayed once like a
+401; a 403 without that code is a missing permission and is not replayed. Add 403 to `statusCodes` to replay
+every 403.
 
 **[doc/auth_failures.md](doc/auth_failures.md)**
 
@@ -202,7 +202,8 @@ What stays the app's job:
 
 ## Errors
 
-The manager's failures reach the client as error events, not as `LinkException`s:
+The manager's failures reach the client as error events, each wrapped in a `LinkException` whose
+`originalException` is the failure:
 
 | Failure | Meaning |
 |---|---|

@@ -2,12 +2,13 @@
 
 ## 0.1.1
 
-Documentation fixes; no code change.
-
-- Docs: state the 403 and `UNAUTHENTICATED` behaviour and how to opt in to
-  other rejections with `AuthFailureMatcher`.
-- Docs: state which exceptions reach the caller; they are not wrapped in
-  `LinkException`.
+- Fix: a 403 whose GraphQL errors carry `extensions.code: UNAUTHENTICATED` is
+  now replayed once with refreshed tokens; before, it reached the caller as a
+  `ServerException`. A 403 without that code is still not replayed.
+- Fix: the manager's failures (`NotAuthenticated`, `InvalidGrant`, `Transient`)
+  now arrive as a `LinkException` whose `originalException` is the failure;
+  before, they arrived as the raw failure object.
+- Docs: how to opt in to other rejections with `AuthFailureMatcher`.
 - Docs: the `clients` dartdoc category now lists `TokenManagerLink` and
   `SkipAuthorization`.
 
