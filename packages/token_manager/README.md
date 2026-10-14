@@ -39,6 +39,8 @@ final tokens = await manager.validToken(); // refreshes when about to expire
 `TokenSet` is a ready-made token value; use your own type `T` by implementing
 `TokenStore<T>`, `TokenRefresher<T>` and `TokenInfo<T>`.
 
+A runnable version is in [example/main.dart](example/main.dart).
+
 ## Concepts
 
 - **`validToken({rejected})`** returns tokens that are valid now. Concurrent

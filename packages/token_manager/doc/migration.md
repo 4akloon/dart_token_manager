@@ -52,4 +52,6 @@ final tokens = await manager.validToken();
   retried by the next call to `validToken`.
 - A refresher should throw `InvalidGrant` only when the refresh token was
   rejected for good. Everything else keeps the session.
+- `skew` defaults to 30 seconds; the old `refreshThreshold` defaulted to
+  3 minutes. Pass `skew: Duration(minutes: 3)` to keep the old margin.
 - The minimum SDK is 3.10.

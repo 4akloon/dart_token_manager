@@ -8,7 +8,10 @@
   `InMemoryTokenStore<T>`, `TokenSet`, `TokenSetInfo` and `TokenManagerRegistry`.
 
 ### Changed
-- `setTokens(null)` is now the same as `logout()`.
+- `setTokens(null)` is `logout()` and also discards an in-flight refresh.
+- The deprecated `tokensStream` now suppresses consecutive identical tokens
+  (`distinct(identical)`) and does not re-emit for `Refreshing` or
+  `Authenticated` transitions that carry the same tokens.
 - The minimum SDK is 3.10.
 - `rxdart` is no longer a dependency.
 
@@ -28,6 +31,8 @@
   `RevokedTokensException`.
 
 ### Behaviour changes
+- `skew` defaults to 30 seconds; the old `refreshThreshold` defaulted to
+  3 minutes. Pass `skew: Duration(minutes: 3)` to keep the old margin.
 - There is no background proactive refresh any more, in the deprecated API
   too. Refresh happens on `validToken`, `authorize` or a rejected token.
   Legacy users who relied on `infoDelegate` for refresh before expiry lose it
