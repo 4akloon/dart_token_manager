@@ -1,80 +1,51 @@
-// Uses the deprecated token_manager API until this adapter is rewritten (plan 2).
-// ignore_for_file: deprecated_member_use
-
-import 'dart:async';
-
 import 'package:dio/dio.dart';
 import 'package:token_manager/token_manager.dart';
 import 'package:token_manager_dio/token_manager_dio.dart';
 
-final class _AppTokens {
-  const _AppTokens({
-    required this.accessToken,
-    required this.refreshToken,
-  });
-
-  final String accessToken;
-  final String refreshToken;
-}
-
-final class _MemoryTokenStorage implements TokenStorage<_AppTokens> {
-  _AppTokens? _tokens;
+final class _BearerDelegate extends RefreshInterceptorDelegate<TokenSet> {
+  const _BearerDelegate();
 
   @override
-  _AppTokens? getTokens() => _tokens;
-
-  @override
-  Future<void> setTokens(_AppTokens? tokens) async {
-    _tokens = tokens;
-  }
-}
-
-final class _AppRefreshDelegate
-    extends TokenManagerRefreshDelegate<_AppTokens> {
-  const _AppRefreshDelegate();
-  @override
-  Future<_AppTokens> refresh(_AppTokens tokens) async => const _AppTokens(
-    accessToken: 'new_access_token',
-    refreshToken: 'new_refresh_token',
-  );
-}
-
-final class _DioAuthDelegate extends RefreshInterceptorDelegate<_AppTokens> {
-  const _DioAuthDelegate();
-
-  @override
-  void applyTokensToRequest(RequestOptions options, _AppTokens? tokens) {
+  void applyTokensToRequest(RequestOptions options, TokenSet? tokens) {
     if (tokens != null) {
       options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
     }
   }
 }
 
+final class _ExampleRefresher implements TokenRefresher<TokenSet> {
+  const _ExampleRefresher();
+
+  @override
+  Future<TokenSet> refresh(TokenSet current) async {
+    // Call your token endpoint here. Throw InvalidGrant when the refresh
+    // token was rejected for good, and Transient when a retry may succeed.
+    return const TokenSet(
+      accessToken: 'new_access_token',
+      refreshToken: 'new_refresh_token',
+    );
+  }
+}
+
 Future<void> main() async {
-  final manager = TokenManager<_AppTokens>(
-    storage: _MemoryTokenStorage(),
-    refreshDelegate: const _AppRefreshDelegate(),
+  final manager = TokenManager<TokenSet>.create(
+    store: InMemoryTokenStore<TokenSet>(),
+    refresher: const _ExampleRefresher(),
+    info: const TokenSetInfo(),
   );
-  await manager.initialize();
-  final StreamSubscription<_AppTokens?> tokensSubscription = manager
-      .tokensStream
-      .listen((_) {});
-
   await manager.setTokens(
-    const _AppTokens(
-      accessToken: 'access_123',
-      refreshToken: 'refresh_123',
-    ),
+    const TokenSet(accessToken: 'access_123', refreshToken: 'refresh_123'),
   );
 
-  final dio = Dio();
+  final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com'));
+  // Pass the same Dio, so the replay keeps its adapter and interceptors.
   dio.interceptors.add(
-    RefreshInterceptor<_AppTokens>(
+    RefreshInterceptor<TokenSet>(
       manager: manager,
-      delegate: const _DioAuthDelegate(),
+      delegate: const _BearerDelegate(),
+      dio: dio,
     ),
   );
 
-  await tokensSubscription.cancel();
   await manager.dispose();
 }
