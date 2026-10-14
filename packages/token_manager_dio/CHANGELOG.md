@@ -1,7 +1,9 @@
 ## 0.2.0 - Unreleased
 
 ### Changed
-- `RefreshInterceptor<T>` is built on the new `token_manager` core: the header
+- Renamed `RefreshInterceptor` to `DioTokenInterceptor`; the old name is a
+  deprecated subclass.
+- `DioTokenInterceptor<T>` is built on the new `token_manager` core: the header
   comes from `TokenManager.validToken()` and a rejected request is replayed
   after `validToken(rejected: ...)`. The constructor and
   `RefreshInterceptorDelegate<T>` (`applyTokensToRequest`, `shouldRefresh`) are

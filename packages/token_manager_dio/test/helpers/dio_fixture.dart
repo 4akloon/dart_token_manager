@@ -6,7 +6,7 @@ import 'bearer_delegate.dart';
 import 'fake_http_adapter.dart';
 import 'fake_refresher.dart';
 
-/// A [Dio] with a [RefreshInterceptor], a manager and fakes, wired together.
+/// A [Dio] with a [DioTokenInterceptor], a manager and fakes, wired together.
 ///
 /// The session starts with the access token `old`. Unless `accepted` says
 /// otherwise the server accepts only `Bearer new`, so every first attempt gets
@@ -37,7 +37,7 @@ final class DioFixture {
       ..httpClientAdapter = adapter;
     final replayDio = ownDio ? dio : (Dio()..httpClientAdapter = adapter);
     dio.interceptors.add(
-      RefreshInterceptor<TokenSet>(
+      DioTokenInterceptor<TokenSet>(
         manager: manager,
         delegate: delegate,
         dio: replayDio,

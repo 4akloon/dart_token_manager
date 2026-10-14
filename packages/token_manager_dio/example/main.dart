@@ -40,7 +40,7 @@ Future<void> main() async {
   final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com'));
   // Pass the same Dio, so the replay keeps its adapter and interceptors.
   dio.interceptors.add(
-    RefreshInterceptor<TokenSet>(
+    DioTokenInterceptor<TokenSet>(
       manager: manager,
       delegate: const _BearerDelegate(),
       dio: dio,

@@ -39,7 +39,7 @@ final class BearerDelegate extends RefreshInterceptorDelegate<TokenSet> {
 
 void configureClient(Dio dio, TokenManager<TokenSet> manager) {
   dio.interceptors.add(
-    RefreshInterceptor<TokenSet>(
+    DioTokenInterceptor<TokenSet>(
       manager: manager,
       delegate: const BearerDelegate(),
       // The Dio the interceptor is added to: the replay keeps its adapter,
