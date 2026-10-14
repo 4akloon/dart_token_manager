@@ -84,9 +84,10 @@ final class TokenEngine<T> {
 
   /// Stores [tokens] and makes them the current session.
   Future<void> setTokens(T tokens) async {
-    await _load();
+    await _loadUnlessBroken();
     await _exclusive<void>(() async {
       await _store.write(tokens);
+      _markLoaded();
       _startNewSession();
       _emit(Authenticated<T>(tokens));
     });
@@ -94,11 +95,11 @@ final class TokenEngine<T> {
 
   /// Removes the tokens and signs the session out.
   Future<void> logout() async {
-    await _load();
+    await _loadUnlessBroken();
     await _exclusive<void>(_clear);
   }
 
-  /// Stops emitting; work that finishes later is discarded.
+  /// Stops emitting; a refresh that finishes later is still persisted.
   Future<void> dispose() async {
     _disposed = true;
     _startNewSession();
@@ -107,8 +108,24 @@ final class TokenEngine<T> {
 
   Future<void> _clear() async {
     await _store.delete();
+    _markLoaded();
     _startNewSession();
     _emit(Unauthenticated<T>());
+  }
+
+  /// Loads the stored tokens, ignoring a read failure: the write that follows
+  /// supersedes whatever the store held.
+  Future<void> _loadUnlessBroken() async {
+    try {
+      await _load();
+    } on Exception {
+      // current() and validToken() surface the read error themselves.
+    }
+  }
+
+  /// Treats the store as read: the engine now knows what it holds.
+  void _markLoaded() {
+    _loading = Future<void>.value();
   }
 
   /// Invalidates work started for the previous session, flight included.
@@ -229,6 +246,9 @@ final class TokenEngine<T> {
   }
 
   /// Persists [refreshed] unless the session changed since [epoch].
+  ///
+  /// The server already rotated the old tokens, so a failed write still keeps
+  /// [refreshed] as the in-memory state.
   Future<T?> _commit(int epoch, T previous, T refreshed) {
     return _exclusive<T?>(() async {
       if (epoch != _epoch) {

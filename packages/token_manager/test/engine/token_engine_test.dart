@@ -75,6 +75,36 @@ void main() {
     expect(engine.state, isA<Unauthenticated<TokenSet>>());
   });
 
+  test('setTokens succeeds when the store read fails', () async {
+    fixture.store.readError = Exception('corrupt');
+    final engine = fixture.engine();
+    final tokens = fixture.tokens(const Duration(hours: 1));
+
+    await engine.setTokens(tokens);
+
+    expect(fixture.store.stored, same(tokens));
+    expect(engine.state, isA<Authenticated<TokenSet>>());
+    expect(await engine.current(), same(tokens));
+  });
+
+  test('logout succeeds when the store read fails', () async {
+    fixture.store.stored = fixture.tokens(const Duration(hours: 1));
+    fixture.store.readError = Exception('corrupt');
+    final engine = fixture.engine();
+
+    await engine.logout();
+
+    expect(fixture.store.stored, isNull);
+    expect(fixture.store.deletes, 1);
+    expect(engine.state, isA<Unauthenticated<TokenSet>>());
+  });
+
+  test('current still surfaces a failed read', () async {
+    fixture.store.readError = Exception('corrupt');
+
+    await expectLater(fixture.engine().current(), throwsException);
+  });
+
   test('logout deletes the tokens and emits Unauthenticated', () async {
     final engine = fixture.engine();
     await engine.setTokens(fixture.tokens(const Duration(hours: 1)));
