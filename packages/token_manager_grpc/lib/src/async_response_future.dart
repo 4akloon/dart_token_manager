@@ -5,11 +5,11 @@ import 'package:grpc/grpc.dart' as grpc;
 /// Response future that can swap underlying pending gRPC call during retries.
 class AsyncResponseFuture<R> extends DelegatingFuture<R>
     implements grpc.ResponseFuture<R> {
-  /// Creates a wrapper around [_result].
-  AsyncResponseFuture._(this._result) : super(_result.future);
-
   /// Creates an empty async response future.
   AsyncResponseFuture() : this._(Completer<R>());
+
+  /// Creates a wrapper around [_result].
+  AsyncResponseFuture._(this._result) : super(_result.future);
 
   /// Builds response future from callback that may replace active response.
   factory AsyncResponseFuture.fromCallback(

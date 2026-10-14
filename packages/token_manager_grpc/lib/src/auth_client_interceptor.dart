@@ -43,7 +43,6 @@ class RefreshInterceptor<T> implements grpc.ClientInterceptor {
 
     try {
       await responseFuture;
-      return responseFuture;
     } catch (error) {
       if (error case grpc.GrpcError(code: grpc.StatusCode.unauthenticated)) {
         await _manager.executeRefresh();
@@ -66,6 +65,8 @@ class RefreshInterceptor<T> implements grpc.ClientInterceptor {
         rethrow;
       }
     }
+
+    return responseFuture;
   });
 
   @override

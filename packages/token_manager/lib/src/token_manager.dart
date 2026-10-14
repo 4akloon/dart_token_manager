@@ -66,7 +66,7 @@ class TokenManager<T> {
       await setTokens(refreshedTokens);
     } on RevokedTokensException catch (_) {
       await setTokens(null);
-    } catch (e) {
+    } on Exception {
       _setTimer(DateTime.now().add(refreshDelegate.refreshDelay));
     } finally {
       _refreshCompleter?.complete();

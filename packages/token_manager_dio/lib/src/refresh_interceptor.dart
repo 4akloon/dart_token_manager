@@ -7,8 +7,8 @@ class RefreshInterceptor<T> extends Interceptor {
   /// Creates an interceptor instance.
   RefreshInterceptor({
     required TokenManager<T> manager,
-    Dio? dio,
     required RefreshInterceptorDelegate<T> delegate,
+    Dio? dio,
   }) : _manager = manager,
        _dio = dio ?? Dio(),
        _delegate = delegate;
