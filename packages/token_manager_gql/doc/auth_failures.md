@@ -66,11 +66,16 @@ final class AppAuthFailureMatcher extends AuthFailureMatcher {
 ## A 403 is not replayed by default
 
 `HttpLink` throws an `HttpLinkServerException` for every HTTP status of 300 or
-more, even when the body is GraphQL JSON with `extensions.code:
-"UNAUTHENTICATED"`. Its status is 403, which is not in the default
-`statusCodes` ({401}), so `isAuthError` is false, the request is not replayed
-and the exception reaches the client. The `UNAUTHENTICATED` code is only read
-from a `Response`, which `HttpLink` does not emit for a 403. To replay a 403,
+more whose body parses as GraphQL JSON, even when that body carries
+`extensions.code: "UNAUTHENTICATED"`. Such a 403 has a status code that is not
+in the default `statusCodes` ({401}), so `isAuthError` is false, the request
+is not replayed and the exception reaches the client. The `UNAUTHENTICATED`
+code is only read from a `Response`, which `HttpLink` does not emit for a 403.
+A 403 whose body is not GraphQL JSON (empty, HTML) arrives as an
+`HttpLinkParserException` instead, which has no status code: the default
+matcher does not recognise it either, so it is not replayed and reaches the
+client too, whatever `statusCodes` holds. To replay a 403 with a GraphQL JSON
+body, add it to `statusCodes`:
 add it to `statusCodes`:
 
 ```dart
@@ -114,4 +119,6 @@ error event, and the request is not sent.
 - `Transient` — the refresh may succeed later; the session stays.
 
 A client above the link may wrap what it receives in its own exception type;
-the link itself delivers the objects as they are. Listen to `manager.states` to send the user to sign-in on `Unauthenticated`.
+the link itself delivers the objects as they are.
+
+Listen to `manager.states` to send the user to sign-in on `Unauthenticated`.
