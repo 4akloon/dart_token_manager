@@ -5,6 +5,9 @@ import 'dart:async';
 /// The source is subscribed with `listen`, never `await for`, so pause, resume
 /// and cancel reach it. An auth failure before the first event reopens the
 /// source once with renewed tokens; later failures are forwarded.
+///
+/// `acquire`, `renew` and `isAuthFailure` must not throw an [Error]: only
+/// [Exception]s are caught, by design.
 final class RelayStream<T, R> {
   /// Creates a relay; nothing happens until [stream] is listened to.
   RelayStream({
@@ -65,6 +68,9 @@ final class RelayStream<T, R> {
     }
   }
 
+  // The `_cancelled` guards below are defence in depth: a cancelled controller
+  // ignores events, and they make that explicit and keep a late `acquire`
+  // failure from touching it.
   void _onData(R event) {
     if (_cancelled) {
       return;

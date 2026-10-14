@@ -224,29 +224,29 @@ void main() {
     await subscription.cancel();
   });
 
-  test(
-    'nothing surfaces after cancel when the source or acquire is late',
-    () async {
-      final uncaught = <Object>[];
-      await runZonedGuarded(() async {
-        final subscription = relayed().listen((_) {});
-        await settle();
-        final source = sources.single;
-        await subscription.cancel();
-        source.controller
-          ..add(1)
-          ..addError(const _Unauthorized());
-        await settle();
+  test('cancelling while renew is pending never reopens the source', () async {
+    final uncaught = <Object>[];
+    await runZonedGuarded(() async {
+      final renewal = Completer<String>();
+      final subscription = relayed(
+        renew: (rejected) {
+          renewCalls++;
+          return renewal.future;
+        },
+      ).listen((_) {});
+      await settle();
+      sources.single.controller.addError(const _Unauthorized());
+      await settle();
 
-        final token = Completer<String>();
-        final late = relayed(acquire: () => token.future).listen((_) {});
-        await settle();
-        await late.cancel();
-        token.completeError(Exception('offline'));
-        await settle();
-      }, (error, stackTrace) => uncaught.add(error));
+      await subscription.cancel();
+      renewal.complete('b');
+      await settle();
 
-      expect(uncaught, isEmpty);
-    },
-  );
+      expect(sources, hasLength(1));
+      expect(sources.single.cancelled, isTrue);
+      expect(renewCalls, 1);
+    }, (error, stackTrace) => uncaught.add(error));
+
+    expect(uncaught, isEmpty);
+  });
 }
