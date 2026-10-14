@@ -11,15 +11,17 @@ import 'request_copies.dart';
 /// [TokenManager] and replays a request once after the server rejects them.
 ///
 /// The client never refreshes by itself: it asks the manager for valid
-/// tokens before every request and reports the tokens a server rejected
-/// through [TokenManager.authorize], so concurrent requests share one
-/// refresh. Every authorized request is sent as a copy, so the caller's
-/// request never gets the token header.
+/// tokens before every request that passes `shouldAuthorize` and reports the
+/// tokens a server rejected, so concurrent requests share one refresh. Such a
+/// request is sent as a copy, so the caller's request never gets the token
+/// header; any other request is sent unchanged, without tokens, and is never
+/// replayed.
 ///
 /// Only a [Request] or an [AbortableRequest] is replayed, because its body is
 /// in memory; the rejected body is read first so its connection is released.
 /// A [StreamedRequest], a [MultipartRequest] and any other request are sent
-/// once, and their rejection is returned as is.
+/// once with tokens, their rejection is returned as is, and the rejected
+/// tokens are reported to the manager so the next request gets new ones.
 ///
 /// [close] closes the inner client but not the manager: dispose the manager
 /// yourself when the session ends.

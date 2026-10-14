@@ -1,15 +1,16 @@
 # Replay
 
 A request is replayed only when it can be sent a second time with exactly
-the same body.
+the same body. Every row below passes `shouldAuthorize`; a request that fails
+it is sent unchanged, without tokens, and never replayed.
 
 | Request | Sent with tokens | Replayed after a rejection |
 |---|---|---|
 | `Request` (what `get`, `post`, `put`, `patch`, `delete` and `head` send) | yes, as a copy | once |
 | `AbortableRequest` | yes, the abort trigger is kept | once |
-| `StreamedRequest`, `AbortableStreamedRequest` | yes, the body is streamed through | no |
-| `MultipartRequest`, `AbortableMultipartRequest` | yes | no |
-| any other `BaseRequest`, including your own subclass of `Request` | yes | no |
+| `StreamedRequest`, `AbortableStreamedRequest` | yes, the body is streamed through | no: sent once, the rejection is returned and reported |
+| `MultipartRequest`, `AbortableMultipartRequest` | yes | no: sent once, the rejection is returned and reported |
+| any other `BaseRequest`, including your own subclass of `Request` | yes | no: sent once, the rejection is returned and reported |
 
 A subclass of `Request` may build its body in `finalize`, so the client does
 not copy it.
@@ -26,6 +27,11 @@ not copy it.
   The client reports the rejected tokens to the manager without waiting, so
   the next request gets new ones. Resend the request yourself if that is
   safe.
+
+The buffered 401 body is held in memory without a size cap. The returned
+response copies the headers of the rejected one unchanged, including its
+original `content-length` and `content-encoding`, and its `contentLength` is
+the length of the buffered body.
 
 If the body of a rejected response fails to arrive, the call fails with that
 `ClientException` and nothing is replayed.
