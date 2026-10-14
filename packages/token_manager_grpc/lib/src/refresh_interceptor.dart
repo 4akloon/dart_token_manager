@@ -1,4 +1,4 @@
-// Uses the deprecated token_manager API until this adapter is rewritten (plan 2).
+// interceptStreaming still uses the deprecated token_manager API until Task 6.
 // ignore_for_file: deprecated_member_use
 
 import 'dart:async';
@@ -6,13 +6,16 @@ import 'dart:async';
 import 'package:grpc/grpc.dart' as grpc;
 import 'package:token_manager/token_manager.dart';
 
-import 'async_response_future.dart';
 import 'async_response_stream.dart';
+import 'attempt_response_future.dart';
+import 'call_attempts.dart';
 import 'refresh_interceptor_delegate.dart';
 
-/// gRPC client interceptor that injects auth metadata and retries on UNAUTHENTICATED.
+/// A gRPC client interceptor that sends calls with valid tokens and replays
+/// a call once when the server rejects its tokens.
 class RefreshInterceptor<T> implements grpc.ClientInterceptor {
-  /// Creates an interceptor instance.
+  /// Creates an interceptor that takes tokens from [manager] and attaches
+  /// them with [delegate].
   const RefreshInterceptor({
     required TokenManager<T> manager,
     required RefreshInterceptorDelegate<T> delegate,
@@ -28,49 +31,16 @@ class RefreshInterceptor<T> implements grpc.ClientInterceptor {
     Q request,
     grpc.CallOptions options,
     grpc.ClientUnaryInvoker<Q, R> invoker,
-  ) => AsyncResponseFuture.fromCallback((setResponse) async {
-    await _manager.waitForFresh;
-    final tokens = _manager.tokens;
-
-    if (tokens == null) {
-      return invoker(method, request, options);
-    }
-
-    final responseFuture = invoker(
-      method,
-      request,
-      options.mergedWith(_buildAuthOptions(tokens)),
+  ) {
+    final attempts = CallAttempts();
+    final response = _manager.authorize<R>(
+      (tokens) => attempts.unary(
+        () => invoker(method, request, _withTokens(options, tokens)),
+      ),
+      isAuthFailure: _isAuthFailure,
     );
-
-    setResponse(responseFuture);
-
-    try {
-      await responseFuture;
-    } catch (error) {
-      if (error case grpc.GrpcError(code: grpc.StatusCode.unauthenticated)) {
-        await _manager.executeRefresh();
-
-        final refreshedTokens = _manager.tokens;
-
-        if (refreshedTokens == null) {
-          return invoker(method, request, options);
-        }
-
-        final newResponseFuture = invoker(
-          method,
-          request,
-          options.mergedWith(_buildAuthOptions(refreshedTokens)),
-        );
-
-        setResponse(newResponseFuture);
-        return newResponseFuture;
-      } else {
-        rethrow;
-      }
-    }
-
-    return responseFuture;
-  });
+    return AttemptResponseFuture<R>(response, attempts);
+  }
 
   @override
   grpc.ResponseStream<R> interceptStreaming<Q, R>(
@@ -125,6 +95,12 @@ class RefreshInterceptor<T> implements grpc.ClientInterceptor {
       }
     }
   });
+
+  bool _isAuthFailure(Object error) =>
+      error is grpc.GrpcError && _delegate.shouldRefresh(error);
+
+  grpc.CallOptions _withTokens(grpc.CallOptions options, T tokens) =>
+      options.mergedWith(_delegate.buildCallOptions(tokens));
 
   grpc.CallOptions? _buildAuthOptions(T tokens) =>
       _delegate.buildCallOptions(tokens);
