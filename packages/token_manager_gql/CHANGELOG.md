@@ -10,3 +10,5 @@
   `UNAUTHENTICATED` error code by default.
 - `SkipAuthorization`, a request context entry for operations sent without
   tokens, such as a login.
+- `TokenManagerSocketAuth<T>`, the `initialPayload` and `onConnectionLost`
+  callbacks for GraphQL WebSocket clients.
