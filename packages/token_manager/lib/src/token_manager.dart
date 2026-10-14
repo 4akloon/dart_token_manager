@@ -1,9 +1,9 @@
 import 'dart:async';
 
+import 'legacy_token_store.dart';
 import 'token_info_delegate.dart';
 import 'token_manager_refresh_delegate.dart';
 import 'token_storage.dart';
-import 'token_store.dart';
 
 /// Manages authentication tokens, including storage, refresh, and expiration handling.
 ///
@@ -20,11 +20,11 @@ class TokenManager<T> {
     required TokenStorage<T> storage,
     TokenManagerRefreshDelegate<T>? refreshDelegate,
     TokenInfoDelegate<T>? infoDelegate,
-  }) : _tokensStore = TokenStore(storage: storage),
+  }) : _tokensStore = LegacyTokenStore(storage: storage),
        _refreshDelegate = refreshDelegate,
        _infoDelegate = infoDelegate;
 
-  final TokenStore<T> _tokensStore;
+  final LegacyTokenStore<T> _tokensStore;
   final TokenManagerRefreshDelegate<T>? _refreshDelegate;
   final TokenInfoDelegate<T>? _infoDelegate;
 
