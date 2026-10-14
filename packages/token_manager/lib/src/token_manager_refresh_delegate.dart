@@ -1,6 +1,14 @@
 /// Defines how [TokenManager] refreshes expired tokens.
+@Deprecated(
+  'Use TokenRefresher; set the expiry margin with '
+  'TokenManager.create(skew: ...).',
+)
 abstract class TokenManagerRefreshDelegate<T> {
   /// Creates a refresh delegate.
+  @Deprecated(
+    'Use TokenRefresher; set the expiry margin with '
+    'TokenManager.create(skew: ...).',
+  )
   const TokenManagerRefreshDelegate();
 
   /// Refreshes the provided tokens.

@@ -1,3 +1,6 @@
+// Uses the deprecated token_manager API until this adapter is rewritten (plan 2).
+// ignore_for_file: deprecated_member_use
+
 import 'package:dio/dio.dart';
 import 'package:token_manager/token_manager.dart';
 import 'refresh_interceptor_delegate.dart';

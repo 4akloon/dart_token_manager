@@ -1,133 +1,132 @@
 import 'dart:async';
 
-import 'legacy_token_store.dart';
+import 'auth_state.dart';
+import 'clock.dart';
+import 'engine/authorized_call.dart';
+import 'engine/relay_stream.dart';
+import 'engine/token_engine.dart';
+import 'legacy/delegate_token_refresher.dart';
+import 'legacy/storage_token_store.dart';
+import 'token_info.dart';
 import 'token_info_delegate.dart';
 import 'token_manager_refresh_delegate.dart';
+import 'token_refresher.dart';
 import 'token_storage.dart';
+import 'token_store.dart';
 
-/// Manages authentication tokens, including storage, refresh, and expiration handling.
-///
-/// This class provides functionality to:
-/// - Store and retrieve tokens
-/// - Automatically refresh tokens before they expire
-/// - Handle token revocation
-/// - Provide a stream of token updates
+/// Manages the tokens of one session: storage, single-flight refresh and an
+/// observable state.
 class TokenManager<T> {
-  /// Creates a new [TokenManager] instance.
-  ///
-  /// The [storage] parameter is used to persist tokens.
+  /// Creates a manager from the old storage and delegates.
+  @Deprecated('Use TokenManager.create.')
   TokenManager({
     required TokenStorage<T> storage,
     TokenManagerRefreshDelegate<T>? refreshDelegate,
     TokenInfoDelegate<T>? infoDelegate,
-  }) : _tokensStore = LegacyTokenStore(storage: storage),
-       _refreshDelegate = refreshDelegate,
-       _infoDelegate = infoDelegate;
+  }) : _engine = TokenEngine<T>(
+         store: StorageTokenStore<T>(storage),
+         skew: refreshDelegate?.refreshThreshold ?? const Duration(minutes: 3),
+         clock: const Clock(),
+         refresher: refreshDelegate == null
+             ? null
+             : DelegateTokenRefresher<T>(refreshDelegate),
+         info: infoDelegate,
+       );
 
-  final LegacyTokenStore<T> _tokensStore;
-  final TokenManagerRefreshDelegate<T>? _refreshDelegate;
-  final TokenInfoDelegate<T>? _infoDelegate;
-
-  Timer? _refreshTimer;
-  Completer<void>? _refreshCompleter;
-
-  /// Initializes the token manager by loading stored tokens.
-  Future<void> initialize() => _tokensStore.initialize();
-
-  /// Returns the current tokens.
-  T? get tokens => _tokensStore.tokens;
-
-  /// Stream of token updates.
+  /// Creates a manager over [store].
   ///
-  /// Emits `null` when tokens are cleared or revoked.
-  Stream<T?> get tokensStream => _tokensStore.tokensStream;
+  /// Tokens are refreshed with [refresher] when [info] says they expire within
+  /// [skew], or when a server rejects them. Without a [refresher] tokens are
+  /// never refreshed; without [info] they never expire.
+  TokenManager.create({
+    required TokenStore<T> store,
+    TokenRefresher<T>? refresher,
+    TokenInfo<T>? info,
+    Duration skew = const Duration(seconds: 30),
+    Clock clock = const Clock(),
+  }) : _engine = TokenEngine<T>(
+         store: store,
+         skew: skew,
+         clock: clock,
+         refresher: refresher,
+         info: info,
+       );
 
-  /// Executes a token refresh operation.
+  final TokenEngine<T> _engine;
+
+  /// Emits the current state on listen, then every change.
+  Stream<AuthState<T>> get states => _engine.states;
+
+  /// Returns the current tokens without refreshing them.
+  Future<T?> current() => _engine.current();
+
+  /// Returns tokens that are valid now, refreshing them when needed.
   ///
-  /// If a refresh is already in progress, returns the future of the ongoing refresh.
-  /// If tokens are revoked during refresh, they will be cleared.
+  /// Pass the tokens a server just rejected as [rejected]. Concurrent callers
+  /// share one refresh. Throws `NotAuthenticated` without tokens, `InvalidGrant`
+  /// when the session ended, and `Transient` when the refresh may be retried.
+  Future<T> validToken({T? rejected}) => _engine.validToken(rejected: rejected);
+
+  /// Stores [tokens]; `null` signs out like [logout].
+  Future<void> setTokens(T? tokens) =>
+      tokens == null ? _engine.logout() : _engine.setTokens(tokens);
+
+  /// Removes the tokens and signs the session out.
+  Future<void> logout() => _engine.logout();
+
+  /// Runs [send] with valid tokens, replaying it once after an auth failure.
+  Future<R> authorize<R>(
+    Future<R> Function(T tokens) send, {
+    required bool Function(Object error) isAuthFailure,
+  }) => AuthorizedCall<T>(_engine).run<R>(send, isAuthFailure: isAuthFailure);
+
+  /// Opens a stream with valid tokens, reopening it once after an early auth
+  /// failure. Pause, resume and cancel reach the source stream.
+  Stream<R> authorizeStream<R>(
+    Stream<R> Function(T tokens) open, {
+    required bool Function(Object error) isAuthFailure,
+  }) {
+    return RelayStream<T, R>(
+      acquire: validToken,
+      renew: (rejected) => validToken(rejected: rejected),
+      open: open,
+      isAuthFailure: isAuthFailure,
+    ).stream;
+  }
+
+  /// Releases the manager; work that finishes later is discarded.
+  Future<void> dispose() => _engine.dispose();
+
+  /// Returns the latest tokens, or `null` before they are loaded.
+  @Deprecated('Use current() or states.')
+  T? get tokens => _engine.state.tokensOrNull;
+
+  /// Emits the tokens on every change; `null` means signed out.
+  @Deprecated('Use states.')
+  Stream<T?> get tokensStream =>
+      _engine.states.map((state) => state.tokensOrNull);
+
+  /// Loads the stored tokens.
+  @Deprecated('Loading is lazy; use current().')
+  Future<void> initialize() async {
+    await _engine.current();
+  }
+
+  /// Forces a refresh; failures are swallowed.
+  @Deprecated('Use validToken(rejected: ...).')
   Future<void> executeRefresh() async {
-    if (_refreshCompleter case final completer?) return completer.future;
-
-    final tokens = _tokensStore.tokens;
-
-    if (tokens == null) return;
-
-    final refreshDelegate = _refreshDelegate;
-    if (refreshDelegate == null) return;
-
-    _resetTimer();
-
-    _refreshCompleter = Completer();
-
+    final tokens = await _engine.current();
+    if (tokens == null) {
+      return;
+    }
     try {
-      final refreshedTokens = await refreshDelegate.refresh(tokens);
-
-      await setTokens(refreshedTokens);
-    } on RevokedTokensException catch (_) {
-      await setTokens(null);
-    } on Exception {
-      _setTimer(DateTime.now().add(refreshDelegate.refreshDelay));
-    } finally {
-      _refreshCompleter?.complete();
-      _refreshCompleter = null;
+      await _engine.validToken(rejected: tokens);
+    } on Exception catch (_) {
+      // The old API never threw from a refresh; failures show in the state.
     }
   }
 
-  /// Returns a future that completes when the current refresh operation finishes.
-  Future<void>? get waitForFresh => _refreshCompleter?.future;
-
-  /// Sets the current tokens and updates the refresh timer.
-  ///
-  /// If [tokens] is `null`, clears the stored tokens and cancels the refresh timer.
-  Future<void> setTokens(T? tokens) async {
-    await _tokensStore.setTokens(tokens);
-
-    _resetTimer();
-
-    if (tokens != null && _refreshDelegate != null) {
-      final at = _infoDelegate?.expiresAt(tokens);
-
-      if (at != null) _setTimer(at);
-    }
-  }
-
-  Future<void> _setTimer(DateTime expiresAt) async {
-    final refreshDelegate = _refreshDelegate;
-    if (refreshDelegate == null) return;
-
-    final duration =
-        expiresAt.difference(DateTime.now()) - refreshDelegate.refreshThreshold;
-
-    _resetTimer();
-    if (duration.isNegative) {
-      await executeRefresh();
-    } else {
-      _refreshTimer = Timer(duration, executeRefresh);
-    }
-  }
-
-  void _resetTimer() {
-    _refreshTimer?.cancel();
-    _refreshTimer = null;
-  }
-
-  /// Disposes of the token manager resources.
-  ///
-  /// This should be called when the token manager is no longer needed.
-  Future<void> dispose() async {
-    _resetTimer();
-    await _tokensStore.dispose();
-
-    if (_refreshCompleter != null) {
-      _refreshCompleter?.complete();
-      _refreshCompleter = null;
-    }
-  }
-}
-
-/// Exception thrown when tokens have been revoked and are no longer valid.
-class RevokedTokensException implements Exception {
-  /// Creates a revoked-tokens exception.
-  const RevokedTokensException();
+  /// Completes when the refresh in flight ends; `null` when none is running.
+  @Deprecated('Use validToken().')
+  Future<void>? get waitForFresh => _engine.pendingRefresh;
 }

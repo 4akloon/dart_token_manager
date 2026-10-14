@@ -1,3 +1,6 @@
+// Uses the deprecated token_manager API until this adapter is rewritten (plan 2).
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 
 import 'package:grpc/grpc.dart' as grpc;
