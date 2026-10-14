@@ -85,6 +85,11 @@ Only a rejection before the first response is replayed, and only once. When
 the replay is rejected too, its error or response reaches the client
 unchanged.
 
+A response whose HTTP status is not in `statusCodes` (for example 403) is never
+replayed, even when its body carries the `UNAUTHENTICATED` code and arrives as
+a server exception. An app whose server answers that way subclasses
+`AuthFailureMatcher` and overrides `isAuthError`.
+
 `HttpLink` parses the body before it checks the status, so a 401 whose body is
 not GraphQL JSON (empty, HTML) arrives as an `HttpLinkParserException`, which
 has no status code. To replay it, extend the matcher in your app, which
