@@ -57,4 +57,40 @@ void main() {
       expect(fixture.refresher.calls, 0);
     });
   });
+
+  group('a refresh failure on an accepted 401', () {
+    test(
+      'keeps the session and refreshes once on a transient failure',
+      () async {
+        final fixture = DioFixture(refreshFailure: const Transient('offline'));
+
+        final call = fixture.dio.get<Object?>(
+          '/me',
+          options: Options(validateStatus: (_) => true),
+        );
+
+        await expectLater(
+          call,
+          throwsA(errors.wrapping(isA<Transient>(), status: 401)),
+        );
+        expect(fixture.refresher.calls, 1);
+        expect(await fixture.manager.current(), DioFixture.initial);
+      },
+    );
+
+    test('reports InvalidGrant and logs out', () async {
+      final fixture = DioFixture(refreshFailure: const InvalidGrant());
+
+      final call = fixture.dio.get<Object?>(
+        '/me',
+        options: Options(validateStatus: (_) => true),
+      );
+
+      await expectLater(
+        call,
+        throwsA(errors.wrapping(isA<InvalidGrant>(), status: 401)),
+      );
+      expect(await fixture.manager.current(), isNull);
+    });
+  });
 }

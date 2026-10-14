@@ -74,9 +74,10 @@ second response.
 - A replay carries `extra['token_manager_dio.replayed'] == true`; the tokens a
   request was sent with are in `extra['token_manager_dio.tokens']`.
 - A `FormData` body is cloned. A `Stream` body cannot be sent twice, so the
-  original error is returned and no refresh is started. A multipart file built
-  from a single-subscription stream cannot be cloned either; use
-  `MultipartFile.fromFile`, `fromBytes` or `fromString`.
+  original error is returned and no refresh is started. A multipart file part
+  built from a one-shot stream (the deprecated `MultipartFile(stream, length)`
+  constructor) is sent empty on the replay, because the stream was already
+  read; use `MultipartFile.fromFile`, `fromBytes` or `fromString`.
 - If the manager returns the same tokens that were rejected (it cannot
   refresh), the original error is returned.
 - Without the `dio` argument the replay goes through a plain `Dio()`; pass the

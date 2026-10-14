@@ -72,7 +72,7 @@ class RefreshInterceptor<T> extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (!_delegate.shouldRefresh(err.response)) {
+    if (_isOwnFailure(err) || !_delegate.shouldRefresh(err.response)) {
       handler.next(err);
       return;
     }
@@ -86,6 +86,11 @@ class RefreshInterceptor<T> extends Interceptor {
     } on DioException catch (error) {
       handler.next(error);
     }
+  }
+
+  /// Whether this interceptor produced [err] itself, so it must not be retried.
+  bool _isOwnFailure(DioException err) {
+    return err.error is RefreshFailure || err.error is NotAuthenticated;
   }
 
   /// Sends [options] again with new tokens; `null` means the failure passes on.

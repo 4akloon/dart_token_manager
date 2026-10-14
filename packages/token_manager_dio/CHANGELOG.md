@@ -12,6 +12,7 @@
 - The replay is sent with `Dio.fetch` on a copy of the request: the `Dio` given
   as `dio` keeps its `baseUrl` (0.1 overwrote it), the response type of the
   request is kept, and a `FormData` body is cloned.
+- Requires `dio` 5.3.1 or newer (`FormData.clone`, used to replay a form).
 - The request is no longer tagged with `extra['_auth_tokens']`; the interceptor
   uses `extra['token_manager_dio.tokens']`.
 

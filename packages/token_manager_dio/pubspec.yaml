@@ -11,7 +11,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  dio: ">=5.2.0 <6.0.0"
+  dio: ">=5.3.1 <6.0.0"
 
   token_manager: ^0.1.0
 
