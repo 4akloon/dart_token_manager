@@ -12,3 +12,4 @@ workspace:
   - packages/token_manager_dio
   - packages/token_manager_gql
   - packages/token_manager_grpc
+  - packages/token_manager_http

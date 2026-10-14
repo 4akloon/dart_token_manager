@@ -1,0 +1,24 @@
+name: token_manager_http
+description: A package:http client that attaches token_manager tokens to requests and replays a request once after an auth failure.
+version: 0.1.0
+repository: https://github.com/4akloon/dart_token_manager
+homepage: https://github.com/4akloon/dart_token_manager
+issue_tracker: https://github.com/4akloon/dart_token_manager/issues
+topics:
+  - http
+  - authentication
+  - oauth
+
+environment:
+  sdk: ^3.10.0
+
+resolution: workspace
+
+# http 1.5.0 added Abortable, AbortableRequest and AbortableStreamedRequest:
+# the client keeps the abort trigger of a request on the copy it sends.
+dependencies:
+  http: ^1.5.0
+  token_manager: ^0.2.0
+
+dev_dependencies:
+  test: ^1.31.0
