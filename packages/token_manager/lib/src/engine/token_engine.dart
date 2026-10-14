@@ -10,6 +10,7 @@ import '../token_store.dart';
 import 'refresh_policy.dart';
 import 'replay_value.dart';
 import 'serial_queue.dart';
+import 'stored_tokens_loader.dart';
 
 /// Loads, persists and refreshes the tokens of one session.
 ///
@@ -34,7 +35,13 @@ final class TokenEngine<T> {
     Unauthenticated<T>(),
   );
 
-  Future<void>? _loading;
+  // late: the loader's callbacks read this engine's epoch and emit its state.
+  late final StoredTokensLoader<T> _loader = StoredTokensLoader<T>(
+    store: _store,
+    epoch: () => _epoch,
+    onLoaded: (tokens) => _emit(Authenticated<T>(tokens)),
+  );
+
   Future<T>? _flight;
   int _epoch = 0;
 
@@ -46,7 +53,7 @@ final class TokenEngine<T> {
 
   /// Returns the current tokens without refreshing them.
   Future<T?> current() async {
-    await _load();
+    await _loader.load();
     return state.tokensOrNull;
   }
 
@@ -55,7 +62,7 @@ final class TokenEngine<T> {
   /// [rejected] is a token a server just refused: it forces a refresh unless
   /// another caller already replaced it. Concurrent callers share one refresh.
   Future<T> validToken({T? rejected}) async {
-    await _load();
+    await _loader.load();
     final tokens = state.tokensOrNull;
     if (tokens == null) {
       throw const NotAuthenticated();
@@ -81,10 +88,10 @@ final class TokenEngine<T> {
 
   /// Stores [tokens] and makes them the current session.
   Future<void> setTokens(T tokens) async {
-    await _loadUnlessBroken();
+    await _loader.loadUnlessBroken();
     await _queue.run<void>(() async {
       await _store.write(tokens);
-      _markLoaded();
+      _loader.markLoaded();
       _startNewSession();
       _emit(Authenticated<T>(tokens));
     });
@@ -92,7 +99,7 @@ final class TokenEngine<T> {
 
   /// Removes the tokens and signs the session out.
   Future<void> logout() async {
-    await _loadUnlessBroken();
+    await _loader.loadUnlessBroken();
     await _queue.run<void>(_clear);
   }
 
@@ -105,24 +112,9 @@ final class TokenEngine<T> {
 
   Future<void> _clear() async {
     await _store.delete();
-    _markLoaded();
+    _loader.markLoaded();
     _startNewSession();
     _emit(Unauthenticated<T>());
-  }
-
-  /// Loads the stored tokens, ignoring a read failure: the write that follows
-  /// supersedes whatever the store held.
-  Future<void> _loadUnlessBroken() async {
-    try {
-      await _load();
-    } on Exception {
-      // current() and validToken() surface the read error themselves.
-    }
-  }
-
-  /// Treats the store as read: the engine now knows what it holds.
-  void _markLoaded() {
-    _loading = Future<void>.value();
   }
 
   /// Invalidates work started for the previous session, flight included.
@@ -135,27 +127,6 @@ final class TokenEngine<T> {
 
   void _emit(AuthState<T> next) {
     _states.add(next);
-  }
-
-  Future<void> _load() async {
-    final loading = _loading ??= _loadOnce();
-    try {
-      await loading;
-    } on Exception {
-      if (identical(_loading, loading)) {
-        _loading = null;
-      }
-      rethrow;
-    }
-  }
-
-  Future<void> _loadOnce() async {
-    final epoch = _epoch;
-    final stored = await _store.read();
-    // setTokens and logout bump the epoch; their state is newer than this read.
-    if (stored != null && epoch == _epoch) {
-      _emit(Authenticated<T>(stored));
-    }
   }
 
   void _forgetWhenDone(Future<T> flight) {
