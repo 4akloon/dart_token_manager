@@ -21,6 +21,7 @@ to every call and, when the server rejects them, refreshes once and replays the 
 - [Errors](#errors)
 - [Client-streaming and bidirectional calls](#client-streaming-and-bidirectional-calls)
 - [Migration from 0.1](#migration-from-01)
+- [Recipes](#recipes)
 - [Reference](#reference)
 
 ## Install
@@ -175,6 +176,12 @@ with the first response, error or end, so a response stream nobody listens to ne
 `RefreshInterceptor` is now `GrpcTokenInterceptor` (the old name is a deprecated subclass), refresh
 failures reach the call, and signed-out calls fail instead of going out without credentials. See
 **[doc/migration.md](doc/migration.md)**.
+
+## Recipes
+
+Each recipe is one page with complete code that is compiled and tested in this repository.
+
+- [Unary and streaming calls with one refresh](doc/recipes/unary_and_streaming.md)
 
 ## Reference
 
