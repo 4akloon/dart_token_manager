@@ -47,6 +47,27 @@ class RefreshInterceptor<T> extends Interceptor {
   }
 
   @override
+  Future<void> onResponse(
+    Response<Object?> response,
+    ResponseInterceptorHandler handler,
+  ) async {
+    if (!_delegate.shouldRefresh(response)) {
+      handler.next(response);
+      return;
+    }
+    try {
+      final replayed = await _replay(response.requestOptions, response);
+      if (replayed == null) {
+        handler.next(response);
+      } else {
+        handler.resolve(replayed);
+      }
+    } on DioException catch (error) {
+      handler.reject(error, true);
+    }
+  }
+
+  @override
   Future<void> onError(
     DioException err,
     ErrorInterceptorHandler handler,
