@@ -63,4 +63,25 @@ void main() {
     );
     expect(registry.ids, isEmpty);
   });
+
+  test('dispose disposes all of several managers', () async {
+    final first = stringManager();
+    final second = stringManager();
+    registry
+      ..register<String>('first', first)
+      ..register<String>('second', second);
+
+    await registry.dispose();
+
+    await expectLater(first.states, emitsThrough(emitsDone));
+    await expectLater(second.states, emitsThrough(emitsDone));
+    expect(registry.ids, isEmpty);
+  });
+
+  test('a supertype of the token type is accepted', () {
+    final manager = stringManager();
+    registry.register<String>('main', manager);
+
+    expect(registry.get<Object>('main'), same(manager));
+  });
 }

@@ -23,7 +23,8 @@ final class TokenManagerRegistry {
   /// Returns the manager registered under [id].
   ///
   /// Throws a [StateError] when there is none, or when it handles another
-  /// token type than [T].
+  /// token type than [T]. [T] must be the registered token type or a
+  /// supertype of it, because generic types are covariant.
   TokenManager<T> get<T>(String id) {
     final manager = _managers[id];
     if (manager == null) {
@@ -38,10 +39,11 @@ final class TokenManagerRegistry {
   }
 
   /// Disposes every manager and empties the registry.
+  ///
+  /// The registry stays usable, and empty, afterwards.
   Future<void> dispose() async {
-    for (final manager in _managers.values) {
-      await manager.dispose();
-    }
+    final managers = _managers.values.toList();
     _managers.clear();
+    await Future.wait(managers.map((manager) => manager.dispose()));
   }
 }
