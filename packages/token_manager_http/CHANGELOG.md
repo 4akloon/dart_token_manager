@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.1
+
+Internal refactor and documentation fixes; no behaviour change.
+
+- The client defaults moved out of `HttpTokenClient` into their own internal
+  class. The public API and behaviour are unchanged.
+- Docs: exact wording on which requests get tokens (`shouldAuthorize`) and
+  which are replayed, including requests that cannot be replayed.
+- Docs: the rejected 401 response body is buffered without a size cap, and
+  its headers are copied.
+
 ## 0.1.0
 
 Initial release of the `package:http` adapter for token_manager.
