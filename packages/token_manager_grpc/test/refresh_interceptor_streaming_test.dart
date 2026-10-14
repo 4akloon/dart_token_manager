@@ -261,4 +261,19 @@ void main() {
     );
     await subscription.cancel();
   });
+
+  test('a rejected call with an open request stream is not reopened', () async {
+    final requests = StreamController<String>()..add('first');
+    final subscription = listen(open(requests.stream));
+    await GrpcFixture.settle();
+    invoker.calls.single.responses.addError(unauthenticated);
+    await GrpcFixture.settle();
+
+    expect(invoker.calls, hasLength(1));
+    expect(errors.single, same(unauthenticated));
+    expect(fixture.refresher.calls, 1);
+    expect(fixture.refresher.replaced, ['t0']);
+    await subscription.cancel();
+    await requests.close();
+  });
 }

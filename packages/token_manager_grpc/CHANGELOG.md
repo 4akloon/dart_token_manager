@@ -33,12 +33,17 @@
   tokens.
 - A streaming call is reopened only before its first response, and only when
   its request stream ended after at most one request (server-streaming calls
-  from generated code). Client-streaming and bidirectional calls are never
-  reopened: the original error reaches the caller.
-- A client-streaming or bidirectional call rejected with an auth failure is
-  not reopened, but the rejected tokens are reported to the manager
-  (`validToken(rejected: ...)`), so the next call starts with refreshed
-  tokens. The original error still reaches the caller.
+  from generated code). A call whose request stream sent more than one
+  request, or had not ended when the call was rejected, is never reopened,
+  whatever its method type: the original error reaches the caller.
+- Such a call (typically client-streaming or bidirectional) rejected with an
+  auth failure is not reopened, but the rejected tokens are reported to the
+  manager (`validToken(rejected: ...)`), so that a refresh starts for the next
+  call. The original error still reaches the caller.
+- For a streaming call `headers` resolves when the first response, error or
+  end arrives, or on cancel. If the response stream is never listened to or
+  cancelled it never resolves, so a bidirectional call must not await
+  `headers` before it listens to the responses.
 - A streaming call is made when its response stream is listened to; a stream
   that is never listened to sends nothing.
 - `headers` and `trailers` follow the call that answered. For a streaming

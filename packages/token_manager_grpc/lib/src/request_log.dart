@@ -5,7 +5,8 @@ import 'dart:async';
 ///
 /// Only a stream that ended after at most one request, the shape of a
 /// server-streaming call, can be made again: its request is sent again from
-/// memory. Client-streaming and bidirectional calls are never made again.
+/// memory. A call whose stream sent more requests, or had not ended, is never
+/// made again, whatever its method type.
 final class RequestLog<Q> {
   /// Creates a log of [requests].
   RequestLog(this._requests);

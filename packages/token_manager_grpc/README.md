@@ -60,10 +60,15 @@ tokens with another status than `UNAUTHENTICATED`.
 - A streaming call is reopened once only if it was rejected before its first
   response and its request stream ended after at most one request (the shape
   of a server-streaming call). After the first response an error is passed on;
-  listen to `manager.states` to resubscribe. Client-streaming and
-  bidirectional calls are never reopened: the original error reaches the
-  caller, but the rejected tokens are reported to the manager, so the next
-  call starts with refreshed tokens.
+  listen to `manager.states` to resubscribe. A call whose request stream sent
+  more than one request, or had not ended when the call was rejected, is never
+  reopened, whatever its method type: the original error reaches the caller,
+  but the rejected tokens are reported to the manager, so that a refresh
+  starts for the next call.
+- For a streaming call `headers` resolves when the first response, error or
+  end arrives, or on cancel. If the response stream is never listened to or
+  cancelled it never resolves, so a bidirectional call must not await
+  `headers` before it listens to the responses.
 - If the refresh fails, the call fails with `InvalidGrant` (the session ended)
   or `Transient` (try again later).
 - `headers`, `trailers` and `cancel()` follow the call that answered, which may
