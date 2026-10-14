@@ -23,8 +23,11 @@ dart pub publish --dry-run             # inside a publishable package
 - `packages/token_manager`: the core, pure Dart, no runtime dependencies.
   `lib/token_manager.dart` is the only public barrel; everything else is under
   `lib/src/`. The state and concurrency live in `lib/src/engine/token_engine.dart`.
-- `packages/token_manager_dio`, `packages/token_manager_grpc`: transport
-  adapters. They depend only on the core and their transport.
+- `packages/token_manager_dio`, `packages/token_manager_grpc`,
+  `packages/token_manager_gql`, `packages/token_manager_http`: transport
+  adapters. They depend only on the core and their transport: dio, gRPC,
+  `gql_link` (a `Link` plus WebSocket auth callbacks) and `package:http`
+  (a `Client` wrapper).
 - `test/` mirrors `lib/src/`; shared fakes are in `test/helpers/`; the size
   limits are enforced by `test/quality/size_limits_test.dart`.
 
