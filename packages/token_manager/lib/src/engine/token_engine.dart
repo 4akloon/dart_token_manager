@@ -102,7 +102,6 @@ final class TokenEngine<T> {
   /// Stops emitting; a refresh that finishes later is still persisted.
   Future<void> dispose() async {
     _disposed = true;
-    _startNewSession();
     await _states.close();
   }
 
@@ -214,7 +213,7 @@ final class TokenEngine<T> {
       _restore(epoch, current);
       return _supersededOrThrow(epoch, Transient(error));
     }
-    final committed = await _commit(epoch, current, refreshed);
+    final committed = await _commit(epoch, refreshed);
     return committed ?? _supersededBy();
   }
 
@@ -249,7 +248,7 @@ final class TokenEngine<T> {
   ///
   /// The server already rotated the old tokens, so a failed write still keeps
   /// [refreshed] as the in-memory state.
-  Future<T?> _commit(int epoch, T previous, T refreshed) {
+  Future<T?> _commit(int epoch, T refreshed) {
     return _exclusive<T?>(() async {
       if (epoch != _epoch) {
         return null;
@@ -257,8 +256,7 @@ final class TokenEngine<T> {
       try {
         await _store.write(refreshed);
       } on Exception {
-        _emit(Authenticated<T>(previous));
-        rethrow;
+        // Kept in memory; the next successful write persists it.
       }
       _emit(Authenticated<T>(refreshed));
       return refreshed;

@@ -210,45 +210,36 @@ void main() {
     expect(engine.state, isA<Unauthenticated<TokenSet>>());
   });
 
-  test('dispose during a refresh writes nothing afterwards', () async {
+  test('a refresh completing after dispose is still persisted', () async {
     final engine = fixture.engine();
     final old = fixture.tokens(const Duration(seconds: 10));
     await engine.setTokens(old);
+    final fresh = fixture.tokens(const Duration(hours: 1), access: 'b');
 
     final pending = engine.validToken();
     await settle();
     await engine.dispose();
-    fixture.refresher.complete(fixture.tokens(const Duration(hours: 1)));
+    fixture.refresher.complete(fresh);
 
-    expect(await pending, same(old));
-    expect(fixture.store.stored, same(old));
+    expect(await pending, same(fresh));
+    expect(fixture.store.stored, same(fresh));
   });
 
-  test(
-    'a store failure after a refresh surfaces and the next call retries',
-    () async {
-      final engine = fixture.engine();
-      final old = fixture.tokens(const Duration(seconds: 10));
-      await engine.setTokens(old);
-      fixture.store.writeError = Exception('disk full');
+  test('a failed write keeps the refreshed tokens in memory', () async {
+    final engine = fixture.engine();
+    await engine.setTokens(fixture.tokens(const Duration(seconds: 10)));
+    final fresh = fixture.tokens(const Duration(hours: 1), access: 'b');
+    fixture.store.writeError = Exception('disk full');
 
-      final failed = expectLater(engine.validToken(), throwsException);
-      await settle();
-      fixture.refresher.complete(fixture.tokens(const Duration(hours: 1)));
-      await failed;
+    final pending = engine.validToken();
+    await settle();
+    fixture.refresher.complete(fresh);
 
-      expect(engine.state.tokensOrNull, same(old));
-      fixture.store.writeError = null;
-      final retry = engine.validToken();
-      await settle();
-      expect(fixture.refresher.callCount, 2);
-      fixture.refresher.complete(
-        fixture.tokens(const Duration(hours: 1)),
-        call: 1,
-      );
-      await retry;
-    },
-  );
+    expect(await pending, same(fresh));
+    expect(engine.state, isA<Authenticated<TokenSet>>());
+    expect(engine.state.tokensOrNull, same(fresh));
+    expect(fixture.refresher.callCount, 1);
+  });
 
   test('a waiter that gives up does not cancel the shared refresh', () async {
     final engine = fixture.engine();
