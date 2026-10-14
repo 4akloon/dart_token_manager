@@ -8,7 +8,7 @@ Internal refactor and documentation fixes; no behaviour change.
   class. The public API and behaviour are unchanged.
 - Docs: exact wording on which requests get tokens (`shouldAuthorize`) and
   which are replayed, including requests that cannot be replayed.
-- Docs: the rejected 401 response body is buffered without a size cap, and
+- Docs: the rejected response body is buffered without a size cap, and
   its headers are copied.
 
 ## 0.1.0

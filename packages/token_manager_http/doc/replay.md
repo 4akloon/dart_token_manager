@@ -28,7 +28,7 @@ not copy it.
   the next request gets new ones. Resend the request yourself if that is
   safe.
 
-In the replayable case, the buffered 401 body is held in memory without a
+In the replayable case, the buffered rejected body is held in memory without a
 size cap. The returned response copies the headers of the rejected one
 unchanged, including its original `content-length` and `content-encoding`, and
 its `contentLength` is the length of the buffered body.
