@@ -24,6 +24,11 @@ final class _Delegate extends TokenManagerRefreshDelegate<String> {
   _Delegate();
 
   Completer<String>? pending;
+
+  /// The refresh in flight; fails the test when none was started.
+  Completer<String> get awaited =>
+      pending ?? (throw StateError('no refresh was started'));
+
   Object? failWith;
   int calls = 0;
 
@@ -83,7 +88,7 @@ void main() {
 
     final refreshing = legacy.executeRefresh();
     await settle();
-    delegate.pending!.complete('new');
+    delegate.awaited.complete('new');
     await refreshing;
     await settle();
 
@@ -132,7 +137,7 @@ void main() {
 
     final refreshing = legacy.executeRefresh();
     await settle();
-    delegate.pending!.complete('new');
+    delegate.awaited.complete('new');
     await refreshing;
 
     expect(legacy.tokens, 'new');
@@ -182,7 +187,7 @@ void main() {
       await settle();
       final waiting = legacy.waitForFresh;
       expect(waiting, isNotNull);
-      delegate.pending!.complete('new');
+      delegate.awaited.complete('new');
       await refreshing;
       await waiting;
 
@@ -190,7 +195,7 @@ void main() {
     },
   );
 
-  test('a TokenInfoDelegate still drives proactive refresh', () async {
+  test('an expired token is refreshed on demand through validToken', () async {
     final legacy = TokenManager<String>(
       storage: storage,
       refreshDelegate: delegate,
@@ -200,7 +205,7 @@ void main() {
 
     final valid = legacy.validToken();
     await settle();
-    delegate.pending!.complete('fresh');
+    delegate.awaited.complete('fresh');
 
     expect(await valid, 'fresh');
   });
