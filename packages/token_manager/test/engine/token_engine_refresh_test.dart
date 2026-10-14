@@ -225,6 +225,22 @@ void main() {
     expect(fixture.store.stored, same(fresh));
   });
 
+  test('a refresh completed after dispose becomes the state', () async {
+    final engine = fixture.engine();
+    await engine.setTokens(fixture.tokens(const Duration(seconds: 10)));
+    final fresh = fixture.tokens(const Duration(hours: 1), access: 'b');
+
+    final pending = engine.validToken();
+    await settle();
+    await engine.dispose();
+    fixture.refresher.complete(fresh);
+    await pending;
+
+    expect(engine.state.tokensOrNull, same(fresh));
+    expect(await engine.validToken(), same(fresh));
+    expect(fixture.refresher.callCount, 1);
+  });
+
   test('a failed write keeps the refreshed tokens in memory', () async {
     final engine = fixture.engine();
     await engine.setTokens(fixture.tokens(const Duration(seconds: 10)));

@@ -39,7 +39,6 @@ final class TokenEngine<T> {
   Future<void> _tail = Future<void>.value();
   Future<T>? _flight;
   int _epoch = 0;
-  bool _disposed = false;
 
   /// Emits the latest state on listen, then every change.
   Stream<AuthState<T>> get states => _states.stream;
@@ -99,9 +98,10 @@ final class TokenEngine<T> {
     await _exclusive<void>(_clear);
   }
 
-  /// Stops emitting; a refresh that finishes later is still persisted.
+  /// Closes [states]; a refresh that finishes later is still persisted.
+  ///
+  /// [state] keeps following every change, but nothing is emitted any more.
   Future<void> dispose() async {
-    _disposed = true;
     await _states.close();
   }
 
@@ -136,9 +136,6 @@ final class TokenEngine<T> {
   }
 
   void _emit(AuthState<T> next) {
-    if (_disposed) {
-      return;
-    }
     _states.add(next);
   }
 
@@ -155,8 +152,10 @@ final class TokenEngine<T> {
   }
 
   Future<void> _loadOnce() async {
+    final epoch = _epoch;
     final stored = await _store.read();
-    if (stored != null) {
+    // setTokens and logout bump the epoch; their state is newer than this read.
+    if (stored != null && epoch == _epoch) {
       _emit(Authenticated<T>(stored));
     }
   }
@@ -256,7 +255,8 @@ final class TokenEngine<T> {
       try {
         await _store.write(refreshed);
       } on Exception {
-        // Kept in memory; the next successful write persists it.
+        // Kept in memory only: nothing retries this write, the next refresh or
+        // setTokens writes again.
       }
       _emit(Authenticated<T>(refreshed));
       return refreshed;

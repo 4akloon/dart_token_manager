@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:test/test.dart';
 import 'package:token_manager/src/auth_state.dart';
 import 'package:token_manager/src/not_authenticated.dart';
@@ -103,6 +105,48 @@ void main() {
     fixture.store.readError = Exception('corrupt');
 
     await expectLater(fixture.engine().current(), throwsException);
+  });
+
+  test(
+    'a stale load after a failed read does not overwrite setTokens',
+    () async {
+      final old = fixture.tokens(const Duration(hours: 1));
+      final next = fixture.tokens(const Duration(hours: 1), access: 'b');
+      fixture.store.stored = old;
+      fixture.store.readError = Exception('corrupt');
+      final firstGate = fixture.store.readGate = Completer<void>();
+      final engine = fixture.engine();
+      late Future<TokenSet?> second;
+      late Completer<void> secondGate;
+
+      final first = engine.current().then<void>(
+        (_) {},
+        onError: (Object _) {
+          fixture.store.readError = null;
+          secondGate = fixture.store.readGate = Completer<void>();
+          second = engine.current();
+        },
+      );
+      final writing = engine.setTokens(next);
+      firstGate.complete();
+      await first;
+      await writing;
+      secondGate.complete();
+      await second;
+
+      expect(engine.state.tokensOrNull, same(next));
+      expect(fixture.store.stored, same(next));
+    },
+  );
+
+  test('logout after dispose still updates the state', () async {
+    final engine = fixture.engine();
+    await engine.setTokens(fixture.tokens(const Duration(hours: 1)));
+    await engine.dispose();
+
+    await engine.logout();
+
+    expect(engine.state, isA<Unauthenticated<TokenSet>>());
   });
 
   test('logout deletes the tokens and emits Unauthenticated', () async {

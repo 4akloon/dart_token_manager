@@ -43,12 +43,13 @@ void main() {
     await seen;
   });
 
-  test('adding after close is ignored', () async {
+  test('adding after close updates the value without emitting', () async {
     final replay = ReplayValue<int>(1);
     await replay.close();
 
     replay.add(2);
 
-    expect(replay.value, 1);
+    expect(replay.value, 2);
+    expect(await replay.stream.toList(), [2]);
   });
 }

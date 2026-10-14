@@ -43,6 +43,9 @@
   dio/grpc adapters, which never trigger a load.
 - The deprecated `executeRefresh()` no longer swallows non-`Exception` errors
   (0.1 used `catch (e)`); a `TypeError` from a delegate now propagates.
+- A failed store write after a refresh is not surfaced to the caller: the
+  refreshed tokens stay in memory only and the store keeps the old pair until
+  the next successful write.
 - `refreshDelay` is ignored: there is no retry timer. A transient failure is
   retried by the next call to `validToken`.
 - A failed refresh no longer ends in a hang: `InvalidGrant` signs out and any

@@ -23,15 +23,14 @@ final class ReplayValue<S> {
 
   /// Makes [value] the latest value and sends it to the listeners.
   ///
-  /// Does nothing once the holder is closed.
+  /// Once the holder is closed the value still updates, but nothing is sent.
   void add(S value) {
-    if (_controller.isClosed) {
-      return;
-    }
     _value = value;
-    _controller.add(value);
+    if (!_controller.isClosed) {
+      _controller.add(value);
+    }
   }
 
-  /// Completes every stream; later [add] calls are ignored.
+  /// Completes every stream; later [add] calls only update the value.
   Future<void> close() => _controller.close();
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:token_manager/src/token_store.dart';
 
 /// A store that counts calls, records their order and can be made to fail.
@@ -20,6 +22,10 @@ final class FakeTokenStore<T> implements TokenStore<T> {
   /// When set, [read] throws it.
   Exception? readError;
 
+  /// When set, [read] returns the stored value only after it completes; the
+  /// value is captured before the wait.
+  Completer<void>? readGate;
+
   /// When set, [write] throws it.
   Exception? writeError;
 
@@ -33,10 +39,12 @@ final class FakeTokenStore<T> implements TokenStore<T> {
   Future<T?> read() async {
     reads++;
     final error = readError;
+    final snapshot = stored;
+    await readGate?.future;
     if (error != null) {
       throw error;
     }
-    return stored;
+    return snapshot;
   }
 
   @override
