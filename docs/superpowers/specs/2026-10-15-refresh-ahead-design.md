@@ -121,18 +121,10 @@ Future<void> refreshIfNeeded({Duration? within});
 
 ## Versioning
 
-The change is additive: no existing call changes meaning. Options:
-
-- **Patch, `token_manager` 0.2.3.** Matches the pre-1.0 rule "a breaking change
-  is a minor bump". The adapters' `^0.2.0` constraints still resolve, so no
-  adapter is re-released. The only breakage would be for someone who
-  `implements TokenManager` (a plain `class`, not `interface`/`final`); the
-  repository has none.
-- **Minor, `token_manager` 0.3.0.** Safest for such implementers, but `^0.2.0`
-  excludes 0.3.0, so all four adapters must be re-released with widened
-  constraints.
-
-Recommendation: 0.2.3. The decision is the user's.
+The change is additive: no existing call changes meaning, so `token_manager`
+ships as a patch, **0.2.3** (decided with the user). The adapters' `^0.2.0`
+constraints still resolve, so no adapter is re-released. The 0.3.0 minor is
+left for the later release that removes the deprecated API.
 
 ## Documentation
 
