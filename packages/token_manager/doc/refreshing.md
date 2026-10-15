@@ -100,8 +100,11 @@ final aheadManager = TokenManager<TokenSet>.create(
 
 `refreshAhead` is `null` by default, which turns it off. It must be greater
 than `skew`, or `create` throws an `ArgumentError`. Choose it well below the
-lifetime of your tokens: a token that is issued already inside the window is
-still refreshed ahead once, and the blocking path takes over at `skew`.
+lifetime of your tokens. Each tokens object gets one background attempt, however
+it arrived: a blocking refresh, `refreshIfNeeded` or `setTokens` can all produce
+tokens already inside the window, and the next `validToken` then starts one
+refresh for them. A window longer than the token lifetime therefore refreshes
+about twice as often as needed. The blocking path takes over at `skew`.
 
 The background refresh follows these rules:
 
