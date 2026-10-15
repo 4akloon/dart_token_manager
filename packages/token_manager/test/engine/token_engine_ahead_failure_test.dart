@@ -76,6 +76,26 @@ void main() {
     },
   );
 
+  test('the same tokens set again after a logout are tried again', () async {
+    final engine = fixture.engine(refreshAhead: ahead);
+    final current = fixture.tokens(inWindow);
+    await engine.setTokens(current);
+    await watch.during(() async {
+      await engine.validToken();
+      fixture.refresher.fail(const Transient('offline'));
+      await settle();
+    });
+
+    await engine.logout();
+    await engine.setTokens(current);
+    await watch.during(() async {
+      await engine.validToken();
+      await settle();
+    });
+
+    expect(fixture.refresher.callCount, 2);
+  });
+
   test('the blocking path retries once the tokens reach the skew', () async {
     final engine = fixture.engine(refreshAhead: ahead);
     await engine.setTokens(fixture.tokens(inWindow));

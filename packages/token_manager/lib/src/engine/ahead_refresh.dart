@@ -28,9 +28,10 @@ final class AheadRefresh<T> {
   final RefreshPolicy<T> _policy;
   final TokenRefresher<T>? _refresher;
 
-  // The tokens a background refresh was last started for: one attempt per
-  // tokens object, so a failing server is not hit by every request.
-  T? _attempted;
+  // The tokens a background refresh was last started for, with the session
+  // epoch they belong to: one attempt per tokens object, so a failing server is
+  // not hit by every request. An entry of an older epoch counts as not tried.
+  (T tokens, int epoch)? _attempted;
 
   /// The refresh [tokens] must wait for, or `null` when they can be used now.
   ///
@@ -53,15 +54,18 @@ final class AheadRefresh<T> {
   /// `InvalidGrant`); an `Error` is not caught.
   void startAhead(T tokens) {
     final refresher = _refresher;
+    final epoch = _session.epoch;
+    if (_attempted case (_, final attemptEpoch) when attemptEpoch != epoch) {
+      _attempted = null;
+    }
     if (refresher == null ||
         _session.isClosed ||
         _session.flight != null ||
-        identical(_attempted, tokens) ||
+        _wasAttempted(tokens) ||
         !_policy.needsAheadRefresh(tokens)) {
       return;
     }
-    _attempted = tokens;
-    final epoch = _session.epoch;
+    _attempted = (tokens, epoch);
     unawaited(
       _flight(refresher, tokens)
           .then<void>((refreshed) => _guardAgainstLoop(epoch, refreshed))
@@ -76,8 +80,13 @@ final class AheadRefresh<T> {
   /// no refresh was tried for, so they are left alone.
   void _guardAgainstLoop(int epoch, T refreshed) {
     if (epoch == _session.epoch && _policy.needsAheadRefresh(refreshed)) {
-      _attempted = refreshed;
+      _attempted = (refreshed, epoch);
     }
+  }
+
+  bool _wasAttempted(T tokens) {
+    final attempted = _attempted;
+    return attempted != null && identical(attempted.$1, tokens);
   }
 
   /// Refreshes [tokens] when they expire within [within] and waits for it.
