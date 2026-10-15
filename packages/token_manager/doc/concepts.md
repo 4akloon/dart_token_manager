@@ -61,15 +61,24 @@ waiting on that refresh still get an answer.
 Store writes and deletes are serialized, so a `setTokens` and a finishing
 refresh never interleave.
 
-## Why no background timer
+## Refreshing before expiry
 
-A timer needs a lifecycle (when to start, pause on app suspend, stop on
-logout), keeps the isolate busy, and refreshes tokens nobody is about to use.
-Refreshing on demand has none of those costs: the first call after the margin
-pays one round trip, and every concurrent caller shares it. Proactive refresh
-is planned for a later release.
+There is still no background timer. A timer needs a lifecycle (when to start,
+pause on app suspend, stop on logout), keeps the isolate busy, and refreshes
+tokens nobody is about to use. Two on-demand tools cover the same need:
+
+- `refreshAhead` makes `validToken` return a still-valid token at once and
+  start the refresh in the background when the token is close to expiry. The
+  call that would have paid for the refresh does not wait.
+- `refreshIfNeeded()` refreshes at a moment the app chooses, such as start-up
+  or return from the background, and waits for the result.
+
+Both use the single flight: a background refresh and a caller that needs a
+refresh share one future. Without either, the first call after the margin pays
+one round trip and every concurrent caller shares it. The windows and the
+failure rules are in [Refreshing](refreshing.md).
 
 ## Where to go next
 
-- [Refreshing](refreshing.md) — expiry, skew and failure types.
+- [Refreshing](refreshing.md) — expiry, skew, refreshing ahead and failure types.
 - [Storage](storage.md) — what happens when the store fails.

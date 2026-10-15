@@ -41,11 +41,12 @@ final tokens = await manager.validToken();
 
 ## Behaviour changes
 
-- There is no background proactive refresh any more, in the deprecated API
-  too. Refresh happens on `validToken`, `authorize` or a rejected token. If
-  you relied on `infoDelegate` for refresh before expiry, you lose it until
-  you call `validToken` before each use. Proactive refresh is planned for a
-  later release.
+- There is no background timer any more, in the deprecated API too. Refresh
+  happens on `validToken`, `authorize` or a rejected token. If you relied on
+  `infoDelegate` for refresh before expiry, pass `refreshAhead` to
+  `TokenManager.create` (0.2.3 and later) to refresh close-to-expiry tokens in
+  the background on the next `validToken`, or call `refreshIfNeeded()` at
+  start-up and when the app resumes.
 - `initialize()` no longer rewrites storage; it only loads lazily. It is still
   required when you use the synchronous deprecated `tokens` getter or the 0.1
   dio/grpc adapters, which never trigger a load themselves.

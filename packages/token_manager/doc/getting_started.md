@@ -53,6 +53,12 @@ Future<void> read(TokenManager<TokenSet> manager) async {
 `validToken` refreshes when `info` says the tokens expire within `skew`
 (30 seconds by default). It throws `NotAuthenticated` when nobody is signed in.
 
+To spare the caller that pays for a refresh, pass `refreshAhead` (for example
+`Duration(minutes: 5)`) to `create`: tokens that are close to expiry are then
+returned at once and refreshed in the background. To refresh at a moment you
+choose, such as start-up, call `refreshIfNeeded()`. Neither uses a timer; see
+[Refreshing](refreshing.md).
+
 ## Authorize a call
 
 ```dart
@@ -79,7 +85,7 @@ Future<void> signOut(TokenManager<TokenSet> manager) async {
 
 ## Where to go next
 
-- [Concepts](concepts.md) — why refresh is on demand and single-flight.
+- [Concepts](concepts.md) — when a refresh happens and why it is single-flight.
 - [Storage](storage.md) — persist tokens in secure storage.
 - [Refreshing](refreshing.md) — implement the `TokenRefresher` properly.
 - [Streams](streams.md) — authorize long-lived streams.

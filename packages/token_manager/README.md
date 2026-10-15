@@ -14,8 +14,9 @@ Pure Dart, no runtime dependencies, and it knows nothing about HTTP: the transpo
 [`token_manager_grpc`](https://pub.dev/packages/token_manager_grpc),
 [`token_manager_gql`](https://pub.dev/packages/token_manager_gql)) plug into it.
 
-> Refresh is on demand. There is no background timer: tokens are refreshed when `validToken`, `authorize`
-> or a rejected token asks for it.
+> Refresh is on demand: tokens are refreshed when `validToken`, `authorize` or a rejected token asks for it.
+> There is no background timer; `refreshAhead` and `refreshIfNeeded` move the refresh off the request path
+> (see [Refreshing before expiry](#refreshing-before-expiry)).
 
 ## Contents
 
@@ -24,6 +25,7 @@ Pure Dart, no runtime dependencies, and it knows nothing about HTTP: the transpo
 - [Quick start](#quick-start)
 - [Session state](#session-state)
 - [Authorizing calls](#authorizing-calls)
+- [Refreshing before expiry](#refreshing-before-expiry)
 - [Errors](#errors)
 - [Migrating from 0.1](#migrating-from-01)
 - [Recipes](#recipes)
@@ -143,6 +145,32 @@ a server just rejected are refreshed unless another caller already replaced them
 
 **[doc/streams.md](doc/streams.md)** · **[doc/refreshing.md](doc/refreshing.md)**
 
+## Refreshing before expiry
+
+`validToken` waits for a refresh only when less than `skew` is left. Set `refreshAhead` to refresh earlier,
+in the background:
+
+```dart
+final manager = TokenManager<TokenSet>.create(
+  store: InMemoryTokenStore<TokenSet>(),
+  refresher: MyRefresher(),
+  info: const TokenSetInfo(),
+  refreshAhead: const Duration(minutes: 5), // must be greater than skew
+);
+```
+
+A call that finds the tokens with less than five minutes left gets them at once and starts the refresh behind
+it. A failed background refresh never signs the user out unless the server rejected the refresh token.
+
+`refreshIfNeeded` refreshes at a moment you choose and waits for it, for example at start-up or when the app
+returns to the foreground:
+
+```dart
+await manager.refreshIfNeeded(within: const Duration(minutes: 10));
+```
+
+**[doc/refreshing.md](doc/refreshing.md)** has the windows and the failure rules.
+
 ## Errors
 
 | Thrown | When |
@@ -176,7 +204,7 @@ Each recipe is one page with complete code that is compiled and tested in this r
 | [Getting started](doc/getting_started.md) | Create a manager, sign in, read tokens, authorize a call |
 | [Concepts](doc/concepts.md) | Layers, single-flight refresh, rejected-token compare, sessions |
 | [Storage](doc/storage.md) | `TokenStore`, `InMemoryTokenStore`, writing a secure-storage store |
-| [Refreshing](doc/refreshing.md) | `TokenRefresher`, `TokenInfo` and skew, failure types |
+| [Refreshing](doc/refreshing.md) | `TokenRefresher`, `TokenInfo` and skew, refreshing before expiry, failure types |
 | [Streams](doc/streams.md) | `authorizeStream` and its pause/resume/cancel contract |
 | [Testing](doc/testing.md) | `Clock`, fakes, how this package's tests are built |
 | [Migrating from 0.1](doc/migration.md) | Mapping from the deprecated API |

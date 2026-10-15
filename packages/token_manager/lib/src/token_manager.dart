@@ -18,9 +18,10 @@ import 'token_store.dart';
 /// Manages the tokens of one session: storage, single-flight refresh and an
 /// observable state.
 ///
-/// Refresh is on demand: tokens are refreshed when [validToken], [authorize]
-/// or a rejected token asks for it, never by a background timer. Concurrent
-/// callers share one refresh.
+/// Refresh is on demand: tokens are refreshed when [validToken], [authorize],
+/// [refreshIfNeeded] or a rejected token asks for it, and, when `refreshAhead`
+/// is set, in the background just before they expire. There is no timer.
+/// Concurrent callers share one refresh.
 ///
 /// ```dart
 /// final manager = TokenManager<TokenSet>.create(

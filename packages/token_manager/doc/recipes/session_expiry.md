@@ -115,8 +115,9 @@ Run it with `dart run example/recipes/session_expiry.dart`. The test
   the initial state; the login screen would flash at start-up.
 - **Treating `Refreshing` as signed out.** The session is still valid while a
   refresh runs.
-- **Expecting a timer.** Refresh is on demand: a session that dies while the app
-  is idle is noticed on the next `validToken` or `authorize`.
+- **Expecting a timer.** There is none: a session that dies while the app is
+  idle is noticed on the next `validToken`, `authorize` or `refreshIfNeeded`.
+  To check at a moment you choose, such as app resume, call `refreshIfNeeded`.
 - **Navigating from inside a `TokenRefresher`.** The refresher only talks to the
   token endpoint; navigation belongs in the state listener.
 - **Forgetting `close()`.** Cancel the subscription when the screen or scope
