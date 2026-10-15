@@ -10,6 +10,8 @@
 One interceptor attaches the access token, recognises an auth failure and replays the request once.
 It depends only on the core and `dio`, and never refreshes by itself: the manager owns the refresh.
 
+**Recipes:** [Replace a hand-written refresh interceptor](doc/recipes/replace_refresh_interceptor.md) · [Skip auth for the login and refresh endpoints](doc/recipes/skip_auth_endpoints.md)
+
 ## Contents
 
 - [Install](#install)

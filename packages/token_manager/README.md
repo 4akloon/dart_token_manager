@@ -18,6 +18,8 @@ Pure Dart, no runtime dependencies, and it knows nothing about HTTP: the transpo
 > There is no background timer; `refreshAhead` and `refreshIfNeeded` move the refresh off the request path
 > (see [Refreshing before expiry](#refreshing-before-expiry)).
 
+**Recipes:** [Sign in and store the tokens](doc/recipes/login_and_set_tokens.md) · [Keep the session in secure storage](doc/recipes/secure_token_store.md) · [Send the user to sign-in when the session ends](doc/recipes/session_expiry.md) · [Refresh the session on app resume](doc/recipes/refresh_on_resume.md) · [Test code that uses tokens without a network](doc/recipes/testing_without_network.md)
+
 ## Contents
 
 - [Install](#install)

@@ -10,6 +10,8 @@ and replays the request** — the GraphQL adapter for [`token_manager`](https://
 built on [`gql_link`](https://pub.dev/packages/gql_link). It works with every client built on `gql_link`
 (`graphql`, `graphql_flutter`, `ferry`) and depends only on `gql_link`, `gql_exec` and `token_manager`.
 
+**Recipes:** [Queries and WebSocket subscriptions](doc/recipes/queries_and_subscriptions.md)
+
 ## Contents
 
 - [Install](#install)

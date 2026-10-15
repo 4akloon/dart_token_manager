@@ -10,6 +10,8 @@
 `Client`, attaches the manager's tokens to every request that passes `shouldAuthorize`, refreshes once when
 the server rejects them and replays the request. It depends only on `http` and `token_manager`.
 
+**Recipes:** [An authorized `http.Client`](doc/recipes/authorized_client.md)
+
 ## Contents
 
 - [Install](#install)

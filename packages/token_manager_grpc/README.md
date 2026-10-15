@@ -11,6 +11,8 @@ to every call and, when the server rejects them, refreshes once and replays the 
 > Part of the dart_token_manager workspace. The core owns storage and refresh; this package only
 > adapts it to `package:grpc`.
 
+**Recipes:** [Unary and streaming calls with one refresh](doc/recipes/unary_and_streaming.md)
+
 ## Contents
 
 - [Install](#install)

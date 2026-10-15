@@ -9,6 +9,8 @@
 **Client-side token lifecycle for Dart — storage, single-flight refresh, an observable session
 state, and thin transport adapters for dio, http, gRPC and GraphQL.**
 
+**Recipes:** [copy-paste solutions for sign-in, secure storage, refresh on resume, dio, http, gRPC and GraphQL](docs/recipes.md)
+
 - 🔁 **Single-flight refresh** — concurrent callers share one in-flight refresh; a token the server rejected is refreshed only if nobody replaced it already.
 - 🧱 **Layered core** — `TokenManager<T>` composes a `TokenStore`, a `TokenRefresher` and a `TokenInfo`; pure Dart, no runtime dependencies, no knowledge of HTTP.
 - 🚦 **Typed failures** — a sealed `RefreshFailure`: `InvalidGrant` ends the session, `Transient` never does; no tokens means `NotAuthenticated`.
