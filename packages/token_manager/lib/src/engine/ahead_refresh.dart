@@ -60,17 +60,21 @@ final class AheadRefresh<T> {
       return;
     }
     _attempted = tokens;
+    final epoch = _session.epoch;
     unawaited(
       _flight(refresher, tokens)
-          .then<void>(_guardAgainstLoop)
+          .then<void>((refreshed) => _guardAgainstLoop(epoch, refreshed))
           .catchError((_) {}, test: (error) => error is Exception),
     );
   }
 
   /// Marks tokens that a refresh returned inside the window as tried, so that
   /// a short-lived token does not start a refresh on every call.
-  void _guardAgainstLoop(T refreshed) {
-    if (_policy.needsAheadRefresh(refreshed)) {
+  ///
+  /// A flight of an older [epoch] resolves with the new session's tokens, which
+  /// no refresh was tried for, so they are left alone.
+  void _guardAgainstLoop(int epoch, T refreshed) {
+    if (epoch == _session.epoch && _policy.needsAheadRefresh(refreshed)) {
       _attempted = refreshed;
     }
   }

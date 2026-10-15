@@ -118,6 +118,25 @@ void main() {
     },
   );
 
+  test(
+    'tokens set while a refresh runs still get their own early refresh',
+    () async {
+      final engine = fixture.engine(refreshAhead: ahead);
+      await engine.setTokens(fixture.tokens(inWindow));
+      await engine.validToken();
+      final loggedIn = fixture.tokens(inWindow, access: 'c');
+      await engine.setTokens(loggedIn);
+      fixture.refresher.complete(fixture.tokens(const Duration(hours: 1)));
+      await settle();
+
+      expect(await engine.validToken(), same(loggedIn));
+      await settle();
+
+      expect(fixture.refresher.callCount, 2);
+      expect(fixture.refresher.requested.last, same(loggedIn));
+    },
+  );
+
   test('tokens that never expire are not refreshed ahead', () async {
     final engine = fixture.engine(refreshAhead: ahead);
     const forever = TokenSet(accessToken: 'a');
