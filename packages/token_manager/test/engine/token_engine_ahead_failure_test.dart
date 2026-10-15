@@ -110,6 +110,22 @@ void main() {
     expect(engine.state, isA<Unauthenticated<TokenSet>>());
   });
 
+  test('a background failure that is not an Exception is swallowed', () async {
+    final engine = fixture.engine(refreshAhead: ahead);
+    final current = fixture.tokens(inWindow);
+    await engine.setTokens(current);
+
+    final uncaught = await watch.during(() async {
+      await engine.validToken();
+      fixture.refresher.fail('boom');
+      await settle();
+    });
+
+    expect(uncaught, isEmpty);
+    expect(engine.state, isA<Authenticated<TokenSet>>());
+    expect(engine.state.tokensOrNull, same(current));
+  });
+
   test('an Error from the refresher is not swallowed', () async {
     final engine = fixture.engine(refreshAhead: ahead);
     final current = fixture.tokens(inWindow);

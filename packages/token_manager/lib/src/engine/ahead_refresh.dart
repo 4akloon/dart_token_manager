@@ -48,7 +48,7 @@ final class AheadRefresh<T> {
   ///
   /// Does nothing without a refresher or a window, after the session was
   /// disposed, while a refresh is in flight, or for tokens already tried. The
-  /// refresh's failures are handled here: a failure that is an `Exception` is
+  /// refresh's failures are handled here: a failure that is not an `Error` is
   /// dropped (the attempt already restored the state, or ended the session on
   /// `InvalidGrant`); an `Error` is not caught.
   void startAhead(T tokens) {
@@ -65,7 +65,7 @@ final class AheadRefresh<T> {
     unawaited(
       _flight(refresher, tokens)
           .then<void>((refreshed) => _guardAgainstLoop(epoch, refreshed))
-          .catchError((_) {}, test: (error) => error is Exception),
+          .catchError((_) {}, test: (error) => error is! Error),
     );
   }
 
