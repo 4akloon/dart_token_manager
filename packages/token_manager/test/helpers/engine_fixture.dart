@@ -1,3 +1,4 @@
+import 'package:token_manager/src/engine/refresh_policy.dart';
 import 'package:token_manager/src/engine/token_engine.dart';
 import 'package:token_manager/src/token_set.dart';
 import 'package:token_manager/src/token_set_info.dart';
@@ -27,10 +28,12 @@ final class EngineFixture {
   TokenEngine<TokenSet> engine({bool withRefresher = true}) {
     return TokenEngine<TokenSet>(
       store: store,
-      skew: const Duration(seconds: 30),
-      clock: clock,
+      policy: RefreshPolicy<TokenSet>(
+        skew: const Duration(seconds: 30),
+        clock: clock,
+        info: const TokenSetInfo(),
+      ),
       refresher: withRefresher ? refresher : null,
-      info: const TokenSetInfo(),
     );
   }
 

@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import '../auth_state.dart';
-import '../clock.dart';
 import '../not_authenticated.dart';
-import '../token_info.dart';
 import '../token_refresher.dart';
 import '../token_store.dart';
 import 'refresh_attempt.dart';
@@ -15,16 +13,14 @@ import 'stored_tokens_loader.dart';
 ///
 /// `TokenManager` delegates all of its work here.
 final class TokenEngine<T> {
-  /// Creates an engine over [store].
+  /// Creates an engine over [store] that refreshes as [policy] decides.
   TokenEngine({
     required TokenStore<T> store,
-    required Duration skew,
-    required Clock clock,
+    required RefreshPolicy<T> policy,
     TokenRefresher<T>? refresher,
-    TokenInfo<T>? info,
   }) : _store = store,
        _refresher = refresher,
-       _policy = RefreshPolicy<T>(skew: skew, clock: clock, info: info);
+       _policy = policy;
 
   final TokenStore<T> _store;
   final TokenRefresher<T>? _refresher;

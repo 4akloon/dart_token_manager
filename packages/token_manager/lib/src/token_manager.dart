@@ -3,6 +3,7 @@ import 'dart:async';
 import 'auth_state.dart';
 import 'clock.dart';
 import 'engine/authorized_call.dart';
+import 'engine/refresh_policy.dart';
 import 'engine/relay_stream.dart';
 import 'engine/token_engine.dart';
 import 'legacy/delegate_token_refresher.dart';
@@ -42,12 +43,15 @@ class TokenManager<T> {
     TokenInfoDelegate<T>? infoDelegate,
   }) : _engine = TokenEngine<T>(
          store: StorageTokenStore<T>(storage),
-         skew: refreshDelegate?.refreshThreshold ?? const Duration(minutes: 3),
-         clock: const Clock(),
+         policy: RefreshPolicy<T>(
+           skew:
+               refreshDelegate?.refreshThreshold ?? const Duration(minutes: 3),
+           clock: const Clock(),
+           info: infoDelegate,
+         ),
          refresher: refreshDelegate == null
              ? null
              : DelegateTokenRefresher<T>(refreshDelegate),
-         info: infoDelegate,
        );
 
   /// Creates a manager over [store].
@@ -63,10 +67,8 @@ class TokenManager<T> {
     Clock clock = const Clock(),
   }) : _engine = TokenEngine<T>(
          store: store,
-         skew: skew,
-         clock: clock,
+         policy: RefreshPolicy<T>(skew: skew, clock: clock, info: info),
          refresher: refresher,
-         info: info,
        );
 
   final TokenEngine<T> _engine;
