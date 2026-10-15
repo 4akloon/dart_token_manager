@@ -108,6 +108,10 @@ class TokenManager<T> {
   /// and when enough time is left. A refresh that is needed is awaited through
   /// the single flight and its `InvalidGrant` or `Transient` is thrown to the
   /// caller.
+  ///
+  /// Tokens without an expiry (no `info`, or an `expiresAt` of null) are never
+  /// refreshed. A [within] of zero or less refreshes only tokens that are
+  /// already expired.
   Future<void> refreshIfNeeded({Duration? within}) =>
       _engine.refreshIfNeeded(within: within);
 
