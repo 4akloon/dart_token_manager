@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.2.3
+
+Refresh ahead and `refreshIfNeeded`; nothing changes unless you opt in.
+
+- `TokenManager.create(refreshAhead: ...)`: tokens that are valid but expire
+  within `refreshAhead` are returned at once and refreshed in the background.
+  It must be greater than `skew`, or `create` throws an `ArgumentError`. It is
+  off by default. A failed background refresh keeps the session unless the
+  server answered `InvalidGrant`, and there is one background attempt per
+  tokens object.
+- `TokenManager.refreshIfNeeded({Duration? within})`: refreshes at a moment you
+  choose, such as start-up or app resume, and waits for it. It completes
+  without a session or when enough time is left, and throws `InvalidGrant` or
+  `Transient` when the refresh fails.
+- Docs: a new recipe, "Refresh the session on app resume", and updated concept
+  docs, including a rewritten "Refreshing before expiry" section. There is
+  still no background timer.
+- The "proactive refresh is planned" note from 0.2.0 is now delivered as an
+  opt-in.
+- The transport adapters need no change: they get refresh ahead through
+  `validToken`.
+
 ## 0.2.2
 
 Clearer description, topics and recipes.

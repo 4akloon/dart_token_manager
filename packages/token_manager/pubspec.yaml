@@ -1,6 +1,6 @@
 name: token_manager
 description: "Single-flight OAuth/JWT token refresh for Dart: pluggable storage, an observable session state and typed refresh failures."
-version: 0.2.2
+version: 0.2.3
 repository: https://github.com/4akloon/dart_token_manager/tree/main/packages/token_manager
 homepage: https://github.com/4akloon/dart_token_manager
 issue_tracker: https://github.com/4akloon/dart_token_manager/issues

@@ -6,8 +6,7 @@ publishing. There are no secrets. The workflow is
 pushed. CI also runs `dart pub publish --dry-run` for every package.
 
 > **Status:** all five packages are on pub.dev. The next release is the
-> patch release `token_manager` 0.2.1, `token_manager_gql` 0.1.1 and
-> `token_manager_http` 0.1.1.
+> patch release `token_manager` 0.2.3.
 
 ## One-time setup
 
