@@ -24,12 +24,17 @@ final class EngineFixture {
   /// The engine's refresher.
   final FakeRefresher<TokenSet> refresher;
 
-  /// Builds an engine with a 30 second skew.
-  TokenEngine<TokenSet> engine({bool withRefresher = true}) {
+  /// Builds an engine with a 30 second skew and, when given, a refresh-ahead
+  /// window.
+  TokenEngine<TokenSet> engine({
+    bool withRefresher = true,
+    Duration? refreshAhead,
+  }) {
     return TokenEngine<TokenSet>(
       store: store,
       policy: RefreshPolicy<TokenSet>(
         skew: const Duration(seconds: 30),
+        refreshAhead: refreshAhead,
         clock: clock,
         info: const TokenSetInfo(),
       ),

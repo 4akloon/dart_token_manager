@@ -104,4 +104,35 @@ void main() {
 
     expect(await plain.validToken(), same(expiring));
   });
+
+  test('create rejects a refreshAhead that equals the skew', () {
+    expect(
+      () => TokenManager<TokenSet>.create(
+        store: store,
+        refreshAhead: const Duration(seconds: 30),
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('create checks refreshAhead against a custom skew', () {
+    expect(
+      () => TokenManager<TokenSet>.create(
+        store: store,
+        skew: const Duration(minutes: 2),
+        refreshAhead: const Duration(seconds: 90),
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('create accepts a refreshAhead greater than the skew', () {
+    expect(
+      () => TokenManager<TokenSet>.create(
+        store: store,
+        refreshAhead: const Duration(minutes: 5),
+      ),
+      returnsNormally,
+    );
+  });
 }

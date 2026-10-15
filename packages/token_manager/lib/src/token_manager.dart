@@ -57,17 +57,26 @@ class TokenManager<T> {
   /// Creates a manager over [store].
   ///
   /// Tokens are refreshed with [refresher] when [info] says they expire within
-  /// [skew], or when a server rejects them. Without a [refresher] tokens are
-  /// never refreshed; without [info] they never expire.
+  /// [skew], or when a server rejects them. With [refreshAhead] set, tokens
+  /// that expire within it are also refreshed in the background by the next
+  /// [validToken]; it must be greater than [skew], or an [ArgumentError] is
+  /// thrown. Without a [refresher] tokens are never refreshed; without [info]
+  /// they never expire.
   TokenManager.create({
     required TokenStore<T> store,
     TokenRefresher<T>? refresher,
     TokenInfo<T>? info,
     Duration skew = const Duration(seconds: 30),
+    Duration? refreshAhead,
     Clock clock = const Clock(),
   }) : _engine = TokenEngine<T>(
          store: store,
-         policy: RefreshPolicy<T>(skew: skew, clock: clock, info: info),
+         policy: RefreshPolicy<T>(
+           skew: skew,
+           refreshAhead: refreshAhead,
+           clock: clock,
+           info: info,
+         ),
          refresher: refresher,
        );
 

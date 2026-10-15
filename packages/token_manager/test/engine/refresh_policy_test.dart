@@ -17,9 +17,14 @@ void main() {
   final start = DateTime.utc(2026, 1, 1);
   const skew = Duration(seconds: 30);
 
-  RefreshPolicy<List<int>> policy({DateTime? expiry, FakeClock? clock}) {
+  RefreshPolicy<List<int>> policy({
+    DateTime? expiry,
+    FakeClock? clock,
+    Duration? refreshAhead,
+  }) {
     return RefreshPolicy<List<int>>(
       skew: skew,
+      refreshAhead: refreshAhead,
       clock: clock ?? FakeClock(start),
       info: expiry == null ? null : _FixedInfo(expiry),
     );
@@ -78,5 +83,109 @@ void main() {
     expect(subject.needsRefresh(tokens, null), isFalse);
     clock.advance(const Duration(minutes: 5));
     expect(subject.needsRefresh(tokens, null), isTrue);
+  });
+
+  group('isExpiring', () {
+    test('is true when less than the window is left', () {
+      final subject = policy(expiry: start.add(const Duration(minutes: 2)));
+
+      expect(subject.isExpiring([1], const Duration(minutes: 3)), isTrue);
+    });
+
+    test('is false when more than the window is left', () {
+      final subject = policy(expiry: start.add(const Duration(minutes: 2)));
+
+      expect(subject.isExpiring([1], const Duration(minutes: 1)), isFalse);
+    });
+
+    test('is true exactly at the window boundary', () {
+      final subject = policy(expiry: start.add(const Duration(minutes: 2)));
+
+      expect(subject.isExpiring([1], const Duration(minutes: 2)), isTrue);
+    });
+
+    test('is false for tokens that never expire', () {
+      expect(policy().isExpiring([1], const Duration(days: 365)), isFalse);
+    });
+  });
+
+  group('needsAheadRefresh', () {
+    const ahead = Duration(minutes: 5);
+
+    test('is false without a refreshAhead window', () {
+      final subject = policy(expiry: start.add(const Duration(minutes: 1)));
+
+      expect(subject.needsAheadRefresh([1]), isFalse);
+    });
+
+    test('is true inside the window', () {
+      final subject = policy(
+        expiry: start.add(const Duration(minutes: 3)),
+        refreshAhead: ahead,
+      );
+
+      expect(subject.needsAheadRefresh([1]), isTrue);
+    });
+
+    test('is true exactly at the window boundary', () {
+      final subject = policy(expiry: start.add(ahead), refreshAhead: ahead);
+
+      expect(subject.needsAheadRefresh([1]), isTrue);
+    });
+
+    test('is false outside the window', () {
+      final subject = policy(
+        expiry: start.add(const Duration(minutes: 6)),
+        refreshAhead: ahead,
+      );
+
+      expect(subject.needsAheadRefresh([1]), isFalse);
+    });
+
+    test('is false for tokens that never expire', () {
+      expect(policy(refreshAhead: ahead).needsAheadRefresh([1]), isFalse);
+    });
+  });
+
+  group('window', () {
+    test('is the skew without a refreshAhead window', () {
+      expect(policy().window, skew);
+    });
+
+    test('is refreshAhead when set', () {
+      expect(
+        policy(refreshAhead: const Duration(minutes: 5)).window,
+        const Duration(minutes: 5),
+      );
+    });
+  });
+
+  group('refreshAhead validation', () {
+    test('equal to the skew is rejected', () {
+      expect(
+        () => policy(refreshAhead: skew),
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.name,
+            'name',
+            'refreshAhead',
+          ),
+        ),
+      );
+    });
+
+    test('shorter than the skew is rejected', () {
+      expect(
+        () => policy(refreshAhead: const Duration(seconds: 10)),
+        throwsArgumentError,
+      );
+    });
+
+    test('longer than the skew is accepted', () {
+      expect(
+        () => policy(refreshAhead: const Duration(seconds: 31)),
+        returnsNormally,
+      );
+    });
   });
 }
