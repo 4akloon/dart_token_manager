@@ -143,6 +143,9 @@ void main() {
       api.get<Object?>('/me').timeout(const Duration(milliseconds: 300)),
       throwsA(isA<TimeoutException>()),
     );
+
+    // The refresh never left the interceptor, so nothing reached the server.
+    expect(server.paths, isEmpty);
   });
 }
 
