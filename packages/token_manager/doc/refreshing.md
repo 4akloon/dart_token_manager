@@ -116,7 +116,7 @@ The background refresh follows these rules:
   the state returns to `Authenticated` and nothing is thrown. `InvalidGrant`
   ends the session as it always does: the store is cleared and `states` emits
   `Unauthenticated`. An `Error` is never caught.
-- **Sessions are respected.** `setTokens`, `logout` and `InvalidGrant` discard
+- **Sessions are respected.** `setTokens` and `logout` discard
   the result of a running background refresh. `dispose` does not: a rotated
   refresh token is not lost. After `dispose` no new background refresh starts.
 

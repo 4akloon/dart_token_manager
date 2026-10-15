@@ -159,8 +159,8 @@ final manager = TokenManager<TokenSet>.create(
 );
 ```
 
-A call that finds the tokens with less than five minutes left gets them at once and starts the refresh behind
-it. A failed background refresh never signs the user out unless the server rejected the refresh token.
+A call that finds the tokens with less than five minutes but more than `skew` left gets them at once and starts
+the refresh behind it. A failed background refresh never signs the user out unless the server rejected the refresh token.
 
 `refreshIfNeeded` refreshes at a moment you choose and waits for it, for example at start-up or when the app
 returns to the foreground:

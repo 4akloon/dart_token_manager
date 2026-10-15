@@ -65,7 +65,9 @@ dart pub publish --dry-run             # inside a publishable package
 | nesting | 3 levels |
 | class | about 15 members |
 
-`TokenManager.create` is the one allowed exception to the five-parameter limit (it has six named parameters because `skew` and `refreshAhead` are separate options); no other API gets this exception.
+`TokenManager.create` is the one allowed exception to the five-parameter
+limit (it has six named parameters because `skew` and `refreshAhead` are
+separate options); no other API gets this exception.
 
 - One public class (or one sealed family) per file. No `utils`, `helpers` or
   `common` files in `lib/`. No `part` / `part of`.
