@@ -30,6 +30,9 @@ final class Session<T> {
   /// The refresh in flight, or `null`.
   Future<T>? get flight => _flight;
 
+  /// Whether [close] was called.
+  bool get isClosed => _states.isClosed;
+
   /// Makes [next] the latest state and sends it to the listeners.
   void emit(AuthState<T> next) {
     _states.add(next);

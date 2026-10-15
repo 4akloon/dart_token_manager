@@ -135,4 +135,20 @@ void main() {
       returnsNormally,
     );
   });
+
+  test('create with refreshAhead refreshes close-to-expiry tokens in the '
+      'background', () async {
+    final eager = TokenManager<TokenSet>.create(
+      store: store,
+      refresher: refresher,
+      info: const TokenSetInfo(),
+      refreshAhead: const Duration(minutes: 5),
+      clock: clock,
+    );
+    final soon = tokens(const Duration(minutes: 3));
+    await eager.setTokens(soon);
+
+    expect(await eager.validToken(), same(soon));
+    expect(refresher.callCount, 1);
+  });
 }

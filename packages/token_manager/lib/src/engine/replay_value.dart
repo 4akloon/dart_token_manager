@@ -11,6 +11,9 @@ final class ReplayValue<S> {
   /// The latest value.
   S get value => _value;
 
+  /// Whether [close] was called.
+  bool get isClosed => _controller.isClosed;
+
   /// A stream that emits the latest value on listen, then every later one.
   Stream<S> get stream => Stream<S>.multi((listener) {
     listener.add(_value);

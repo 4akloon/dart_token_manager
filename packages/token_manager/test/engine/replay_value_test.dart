@@ -52,4 +52,13 @@ void main() {
     expect(replay.value, 2);
     expect(await replay.stream.toList(), [2]);
   });
+
+  test('isClosed is false until close and true after', () async {
+    final replay = ReplayValue<int>(1);
+    expect(replay.isClosed, isFalse);
+
+    await replay.close();
+
+    expect(replay.isClosed, isTrue);
+  });
 }

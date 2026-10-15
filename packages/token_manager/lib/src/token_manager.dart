@@ -93,6 +93,8 @@ class TokenManager<T> {
   /// Pass the tokens a server just rejected as [rejected]. Concurrent callers
   /// share one refresh. Throws `NotAuthenticated` without tokens, `InvalidGrant`
   /// when the session ended, and `Transient` when the refresh may be retried.
+  /// With refreshAhead set, tokens that are close to expiry are returned at
+  /// once and refreshed in the background.
   Future<T> validToken({T? rejected}) => _engine.validToken(rejected: rejected);
 
   /// Stores [tokens]; `null` signs out like [logout].

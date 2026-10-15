@@ -80,4 +80,12 @@ void main() {
 
     expect(session.state.tokensOrNull, 'a');
   });
+
+  test('isClosed follows close', () async {
+    expect(session.isClosed, isFalse);
+
+    await session.close();
+
+    expect(session.isClosed, isTrue);
+  });
 }

@@ -57,13 +57,20 @@ final class TokenEngine<T> {
   ///
   /// [rejected] is a token a server just refused: it forces a refresh unless
   /// another caller already replaced it. Concurrent callers share one refresh.
+  /// Tokens that are valid but inside the refresh-ahead window are returned at
+  /// once and refreshed in the background.
   Future<T> validToken({T? rejected}) async {
     await _loader.load();
     final tokens = state.tokensOrNull;
     if (tokens == null) {
       throw const NotAuthenticated();
     }
-    return _refresh.dueFlight(tokens, rejected) ?? tokens;
+    final due = _refresh.dueFlight(tokens, rejected);
+    if (due != null) {
+      return due;
+    }
+    _refresh.startAhead(tokens);
+    return tokens;
   }
 
   /// Completes when the refresh in flight ends, never with an error; `null`
