@@ -169,7 +169,7 @@ returns to the foreground:
 await manager.refreshIfNeeded(within: const Duration(minutes: 10));
 ```
 
-**[doc/refreshing.md](doc/refreshing.md)** has the windows and the failure rules.
+**[doc/refreshing.md](doc/refreshing.md)** has the windows and the failure rules; [Refresh the session on app resume](doc/recipes/refresh_on_resume.md) is a complete recipe.
 
 ## Errors
 
@@ -195,6 +195,7 @@ Each recipe is one page with complete code that is compiled and tested in this r
 - [Sign in and store the tokens](doc/recipes/login_and_set_tokens.md)
 - [Keep the session in secure storage](doc/recipes/secure_token_store.md)
 - [Send the user to sign-in when the session ends](doc/recipes/session_expiry.md)
+- [Refresh the session on app resume](doc/recipes/refresh_on_resume.md)
 - [Test code that uses tokens without a network](doc/recipes/testing_without_network.md)
 
 ## Reference

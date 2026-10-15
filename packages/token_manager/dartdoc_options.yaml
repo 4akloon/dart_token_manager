@@ -30,6 +30,9 @@ dartdoc:
     recipe-session-expiry:
       markdown: doc/recipes/session_expiry.md
       displayName: "Recipe: send the user to sign-in when the session ends"
+    recipe-refresh-on-resume:
+      markdown: doc/recipes/refresh_on_resume.md
+      displayName: "Recipe: refresh the session on app resume"
     recipe-testing-without-network:
       markdown: doc/recipes/testing_without_network.md
       displayName: "Recipe: test code that uses tokens without a network"
@@ -44,5 +47,6 @@ dartdoc:
     - recipe-login-and-set-tokens
     - recipe-secure-token-store
     - recipe-session-expiry
+    - recipe-refresh-on-resume
     - recipe-testing-without-network
   showUndocumentedCategories: true

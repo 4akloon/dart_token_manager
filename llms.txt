@@ -18,6 +18,7 @@ Install the core plus the adapter for your transport from pub.dev. Every recipe 
 - [Sign in and store the tokens](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/recipes/login_and_set_tokens.md): create the manager, sign in, map refresh failures.
 - [Keep the session in secure storage](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/recipes/secure_token_store.md): a custom TokenStore over secure storage.
 - [Send the user to sign-in when the session ends](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/recipes/session_expiry.md): react to logout and a dead refresh token from the states stream.
+- [Refresh the session on app resume](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/recipes/refresh_on_resume.md): refreshIfNeeded from the lifecycle callback, with refreshAhead.
 - [Test code that uses tokens without a network](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager/doc/recipes/testing_without_network.md): fake clock, fake refresher, fake server.
 - [Replace a hand-written Dio refresh interceptor](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_dio/doc/recipes/replace_refresh_interceptor.md): one refresh for parallel 401 responses.
 - [Skip auth for the login and refresh endpoints in Dio](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_dio/doc/recipes/skip_auth_endpoints.md): a second Dio without the interceptor.
