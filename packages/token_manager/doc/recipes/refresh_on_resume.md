@@ -120,8 +120,8 @@ Run it with `dart run example/recipes/refresh_on_resume.dart`. The test
 ## Common mistakes
 
 - **Waiting for it before the first frame.** `onResumed` can wait on the
-  network. Start it without blocking the UI; the next request refreshes the
-  tokens anyway if it has not finished.
+  network. Start it without blocking the UI; the next request still gets valid
+  tokens, and joins the refresh if it is still running and the tokens are due.
 - **Picking a window longer than the token lifetime.** Every resume then
   refreshes. Use a window of a few minutes, well below the lifetime.
 - **Setting `refreshAhead` to `skew` or less.** `create` throws an
@@ -129,8 +129,9 @@ Run it with `dart run example/recipes/refresh_on_resume.dart`. The test
 - **Expecting a timer.** `refreshAhead` acts when a request asks for a token
   and `refreshIfNeeded` when you call it. A suspended app refreshes nothing,
   which is why the resume callback calls it.
-- **Letting `Transient` escape.** `refreshIfNeeded` throws it to the caller;
-  catch it where a failed refresh should not stop the app.
+- **Letting a failure escape.** `refreshIfNeeded` throws `Transient` and
+  `InvalidGrant` to the caller; catch them where a failed refresh should not
+  stop the app.
 
 ## See also
 
