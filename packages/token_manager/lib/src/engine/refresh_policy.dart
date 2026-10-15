@@ -52,13 +52,13 @@ final class RefreshPolicy<T> {
     return ahead != null && isExpiring(tokens, ahead);
   }
 
-  /// Whether [tokens] expire within [window] of now; never for tokens without
+  /// Whether [tokens] expire within [within] of now; never for tokens without
   /// an expiry.
-  bool isExpiring(T tokens, Duration window) {
+  bool isExpiring(T tokens, Duration within) {
     final expiresAt = _info?.expiresAt(tokens);
     if (expiresAt == null) {
       return false;
     }
-    return !_clock.now().add(window).isBefore(expiresAt);
+    return !_clock.now().add(within).isBefore(expiresAt);
   }
 }
