@@ -218,6 +218,21 @@ void main() {
 
     expect(await manager.current(), isNull);
   });
+
+  test('moving the clock past the expiry triggers a refresh', () async {
+    final refresher = CountingRefresher();
+    final repository = ProfileRepository(
+      managerFor(refresher, const Duration(hours: 1)),
+      FakeProfileApi({'stale', 'fresh-1'}),
+    );
+    await repository.load();
+    expect(refresher.calls, 0);
+
+    clock.current = clock.current.add(const Duration(hours: 1));
+    await repository.load();
+
+    expect(refresher.calls, 1);
+  });
 }
 ```
 

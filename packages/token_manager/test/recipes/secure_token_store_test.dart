@@ -2,7 +2,7 @@ import 'package:test/test.dart';
 import 'package:token_manager/token_manager.dart';
 
 import '../../example/recipes/secure_token_store.dart'
-    show MemorySecretBox, SecureTokenStore;
+    show MemorySecretBox, SecretBox, SecureTokenStore;
 
 void main() {
   // Assigned in setUp, which runs before every test.
@@ -82,4 +82,59 @@ void main() {
     expect(box.values, isEmpty);
     await manager.dispose();
   });
+
+  test('a failed write leaves the manager signed out and silent', () async {
+    final manager = TokenManager<TokenSet>.create(
+      store: SecureTokenStore(_FailingWriteBox()),
+    );
+    addTearDown(manager.dispose);
+    final published = <AuthState<TokenSet>>[];
+    final subscription = manager.states.listen(published.add);
+    addTearDown(subscription.cancel);
+
+    await expectLater(manager.setTokens(tokens), throwsStateError);
+    await pumpEventQueue();
+
+    expect(await manager.current(), isNull);
+    // The stream replays the current state on listen; nothing newer follows.
+    expect(published, everyElement(isA<Unauthenticated<TokenSet>>()));
+  });
+
+  test('a dead refresh token deletes the entry from the box', () async {
+    final manager = TokenManager<TokenSet>.create(
+      store: store,
+      refresher: _DeadRefresher(),
+    );
+    addTearDown(manager.dispose);
+    await manager.setTokens(tokens);
+
+    await expectLater(
+      manager.validToken(rejected: tokens),
+      throwsA(isA<InvalidGrant>()),
+    );
+
+    expect(box.values, isEmpty);
+  });
+}
+
+/// A box whose writes always fail.
+final class _FailingWriteBox implements SecretBox {
+  @override
+  Future<String?> read(String key) async => null;
+
+  @override
+  Future<void> write(String key, String value) async {
+    throw StateError('keychain locked');
+  }
+
+  @override
+  Future<void> delete(String key) async {}
+}
+
+/// A refresher whose refresh token is always rejected.
+final class _DeadRefresher implements TokenRefresher<TokenSet> {
+  @override
+  Future<TokenSet> refresh(TokenSet current) async {
+    throw const InvalidGrant();
+  }
 }

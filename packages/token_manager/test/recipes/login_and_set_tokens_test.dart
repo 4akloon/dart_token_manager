@@ -9,12 +9,14 @@ void main() {
   late StandInAuthServer server;
   late Session session;
 
-  setUp(() {
-    server = StandInAuthServer();
+  /// Replaces [server] and [session] with ones whose tokens live [lifetime].
+  void sessionWith(Duration lifetime) {
+    server = StandInAuthServer(lifetime: lifetime);
     session = Session(api: server);
-  });
+    addTearDown(session.dispose);
+  }
 
-  tearDown(() => session.dispose());
+  setUp(() => sessionWith(const Duration(hours: 1)));
 
   test('signIn stores the tokens', () async {
     await session.signIn('ada@example.com', 'secret');
@@ -41,20 +43,21 @@ void main() {
     expect(await session.manager.current(), isNull);
   });
 
-  test('expired tokens are refreshed once on the next validToken', () async {
-    server = StandInAuthServer(lifetime: const Duration(seconds: 5));
-    session = Session(api: server);
-    await session.signIn('ada@example.com', 'secret');
+  test(
+    'tokens inside the skew are refreshed once on the next validToken',
+    () async {
+      sessionWith(const Duration(seconds: 5));
+      await session.signIn('ada@example.com', 'secret');
 
-    final tokens = await session.manager.validToken();
+      final tokens = await session.manager.validToken();
 
-    expect(tokens.accessToken, 'access-2');
-    expect(server.refreshes, 1);
-  });
+      expect(tokens.accessToken, 'access-2');
+      expect(server.refreshes, 1);
+    },
+  );
 
   test('a rejected refresh token signs the session out', () async {
-    server = StandInAuthServer(lifetime: const Duration(seconds: 5));
-    session = Session(api: server);
+    sessionWith(const Duration(seconds: 5));
     await session.signIn('ada@example.com', 'secret');
     server.isRevoked = true;
 
@@ -67,8 +70,7 @@ void main() {
   });
 
   test('a network error keeps the session', () async {
-    server = StandInAuthServer(lifetime: const Duration(seconds: 5));
-    session = Session(api: server);
+    sessionWith(const Duration(seconds: 5));
     await session.signIn('ada@example.com', 'secret');
     server.isOffline = true;
 
@@ -78,5 +80,16 @@ void main() {
     );
 
     expect((await session.manager.current())?.accessToken, 'access-1');
+  });
+
+  test('concurrent validToken calls share one refresh', () async {
+    sessionWith(const Duration(seconds: 5));
+    await session.signIn('ada@example.com', 'secret');
+
+    await Future.wait([
+      for (var i = 0; i < 3; i++) session.manager.validToken(),
+    ]);
+
+    expect(server.refreshes, 1);
   });
 }
