@@ -4,7 +4,7 @@ import '../auth_state.dart';
 import '../not_authenticated.dart';
 import '../token_refresher.dart';
 import '../token_store.dart';
-import 'refresh_attempt.dart';
+import 'ahead_refresh.dart';
 import 'refresh_policy.dart';
 import 'session.dart';
 import 'stored_tokens_loader.dart';
@@ -18,14 +18,21 @@ final class TokenEngine<T> {
     required TokenStore<T> store,
     required RefreshPolicy<T> policy,
     TokenRefresher<T>? refresher,
-  }) : _store = store,
-       _refresher = refresher,
-       _policy = policy;
+  }) : _store = store {
+    _refresh = AheadRefresh<T>(
+      session: _session,
+      store: store,
+      policy: policy,
+      refresher: refresher,
+    );
+  }
 
   final TokenStore<T> _store;
-  final TokenRefresher<T>? _refresher;
-  final RefreshPolicy<T> _policy;
   final Session<T> _session = Session<T>();
+
+  // late: it reads this engine's session, which exists only after the
+  // initializer list has run.
+  late final AheadRefresh<T> _refresh;
 
   // late: the loader's callbacks read this engine's session.
   late final StoredTokensLoader<T> _loader = StoredTokensLoader<T>(
@@ -56,22 +63,7 @@ final class TokenEngine<T> {
     if (tokens == null) {
       throw const NotAuthenticated();
     }
-    final refresher = _refresher;
-    if (refresher == null || !_policy.needsRefresh(tokens, rejected)) {
-      return tokens;
-    }
-    final running = _session.flight;
-    if (running != null) {
-      return running;
-    }
-    final flight = RefreshAttempt<T>(
-      session: _session,
-      store: _store,
-      refresher: refresher,
-      current: tokens,
-    ).run();
-    _session.track(flight);
-    return flight;
+    return _refresh.dueFlight(tokens, rejected) ?? tokens;
   }
 
   /// Completes when the refresh in flight ends, never with an error; `null`
