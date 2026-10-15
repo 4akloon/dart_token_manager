@@ -10,7 +10,8 @@ subscriptions over a WebSocket with `TokenManagerSocketAuth`, from one manager.
 creates the WebSocket link of your client; in an app it passes
 `initialPayload` and `onConnectionLost` to that client's socket config, as the
 [subscriptions guide](https://github.com/4akloon/dart_token_manager/blob/main/packages/token_manager_gql/doc/subscriptions.md)
-shows. The recipe depends only on `gql_link`, so it does not import a client.
+shows. The recipe depends only on `gql_link`, so it does not import a client. It parses documents with `parseString` from `package:gql`; add `gql` to your own
+dependencies to do the same.
 `StandInServer` replaces your server.
 
 <!-- include: example/recipes/queries_and_subscriptions.dart -->
