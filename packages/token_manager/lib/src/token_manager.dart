@@ -97,6 +97,19 @@ class TokenManager<T> {
   /// once and refreshed in the background.
   Future<T> validToken({T? rejected}) => _engine.validToken(rejected: rejected);
 
+  /// Refreshes the tokens when less than [within] is left before they expire.
+  ///
+  /// Use it at a moment you choose, such as start-up or app resume, to have
+  /// fresh tokens before the first request. [within] defaults to the
+  /// `refreshAhead` given to [TokenManager.create], or to its `skew` when none
+  /// was given; pass a larger value, for example `Duration(minutes: 10)`, to
+  /// refresh earlier. Completes normally without tokens, without a refresher
+  /// and when enough time is left. A refresh that is needed is awaited through
+  /// the single flight and its `InvalidGrant` or `Transient` is thrown to the
+  /// caller.
+  Future<void> refreshIfNeeded({Duration? within}) =>
+      _engine.refreshIfNeeded(within: within);
+
   /// Stores [tokens]; `null` signs out like [logout].
   Future<void> setTokens(T? tokens) =>
       tokens == null ? _engine.logout() : _engine.setTokens(tokens);

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../not_authenticated.dart';
 import '../token_refresher.dart';
 import '../token_store.dart';
 import 'refresh_attempt.dart';
@@ -76,6 +77,26 @@ final class AheadRefresh<T> {
   void _guardAgainstLoop(int epoch, T refreshed) {
     if (epoch == _session.epoch && _policy.needsAheadRefresh(refreshed)) {
       _attempted = refreshed;
+    }
+  }
+
+  /// Refreshes [tokens] when they expire within [within] and waits for it.
+  ///
+  /// [within] defaults to the refresh-ahead window, or the skew without one.
+  /// Does nothing without tokens or a refresher. It starts a refresh or joins
+  /// the one in flight and throws what that refresh throws, except that a
+  /// logout which superseded it ends the wait quietly.
+  Future<void> ifNeeded(T? tokens, Duration? within) async {
+    final refresher = _refresher;
+    if (tokens == null ||
+        refresher == null ||
+        !_policy.isExpiring(tokens, within ?? _policy.window)) {
+      return;
+    }
+    try {
+      await _flight(refresher, tokens);
+    } on NotAuthenticated {
+      // A logout superseded the refresh: there is nothing left to refresh.
     }
   }
 

@@ -151,4 +151,26 @@ void main() {
     expect(await eager.validToken(), same(soon));
     expect(refresher.callCount, 1);
   });
+
+  test(
+    'refreshIfNeeded refreshes tokens that expire within the window',
+    () async {
+      await manager.setTokens(tokens(const Duration(minutes: 3)));
+
+      final pending = manager.refreshIfNeeded(
+        within: const Duration(minutes: 5),
+      );
+      await settle();
+      refresher.complete(tokens(const Duration(hours: 1), access: 'b'));
+      await pending;
+
+      expect((await manager.current())?.accessToken, 'b');
+    },
+  );
+
+  test('refreshIfNeeded does nothing when signed out', () async {
+    await manager.refreshIfNeeded();
+
+    expect(refresher.callCount, 0);
+  });
 }

@@ -73,6 +73,16 @@ final class TokenEngine<T> {
     return tokens;
   }
 
+  /// Refreshes the tokens when less than [within] is left, and waits for it.
+  ///
+  /// [within] defaults to the refresh-ahead window, or to the skew without
+  /// one. Completes normally without tokens, without a refresher or when
+  /// enough time is left; otherwise it throws what the refresh throws.
+  Future<void> refreshIfNeeded({Duration? within}) async {
+    await _loader.load();
+    await _refresh.ifNeeded(state.tokensOrNull, within);
+  }
+
   /// Completes when the refresh in flight ends, never with an error; `null`
   /// when no refresh is running.
   Future<void>? get pendingRefresh =>
